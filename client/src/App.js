@@ -9,6 +9,7 @@ import KanbanTab from './components/KanbanTab';
 import Dashboard from './components/Dashboard';
 import UserStoryManagement from './components/UserStoryManagement';
 import VideoTranscription from './components/VideoTranscription';
+import ScopeView from './components/ScopeView';
 import api from './services/api';
 
 function App() {
@@ -51,6 +52,7 @@ function App() {
 
   // Cargar datos iniciales
   useEffect(() => {
+    console.log('App - Estado inicial:', { columns, stories, currentJsonFile });
     const fetchData = async () => {
       try {
         setLoading(true);
@@ -62,9 +64,11 @@ function App() {
         // Si hay un archivo JSON seleccionado, cargar sus columnas y historias
         if (currentJsonFile) {
           const columnsResponse = await api.getColumns(currentJsonFile);
+          console.log('App - Columnas cargadas:', columnsResponse.data);
           setColumns(columnsResponse.data);
           
           const storiesResponse = await api.getStories(currentJsonFile);
+          console.log('App - Historias cargadas:', storiesResponse.data);
           setStories(storiesResponse.data);
         } else {
           // Si no hay un archivo JSON seleccionado pero hay archivos disponibles, seleccionar el primero
@@ -85,6 +89,7 @@ function App() {
         }
         
         setLoading(false);
+        console.log('App - Datos cargados:', { columns, stories, currentJsonFile });
       } catch (err) {
         setError('Error loading data: ' + err.message);
         setLoading(false);
@@ -431,6 +436,12 @@ function App() {
                   currentJsonFile={currentJsonFile}
                   startDate={chartStartDate}
                   endDate={chartEndDate}
+                />
+              ),
+              'Alcance': (
+                <ScopeView
+                  columns={columns}
+                  stories={stories}
                 />
               ),
               'Transcripción': (
