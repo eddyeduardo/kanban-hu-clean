@@ -1,0 +1,131 @@
+{
+  "historias_de_usuario": [
+    {
+      "id_historia": "HU-001",
+      "titulo": "Creación automática de cliente en ERP Dobra desde Hotspot",
+      "usuario": "Sistema Hotspot, Vendedor, Equipo de ventas, Comercial, Proceso de Creación de Oportunidades",
+      "requerimiento": "Crear automáticamente un cliente en el ERP Dobra cuando un nuevo prospecto o negocio en Hotspot cumpla con reglas de negocio predefinidas.",
+      "objetivo": "Agilizar el proceso de cotización en Dobra, evitando la doble entrada de datos del cliente y asegurando que la información esté disponible y sincronizada para el equipo de ventas.",
+      "criterios_de_aceptacion": [
+        "Cuando se crea o actualiza un negocio/oportunidad en Hotspot que cumple la regla de negocio para la creación de clientes en Dobra, se debe disparar una llamada a la API de Dobra.",
+        "La API debe enviar los datos mapeados del contacto/negocio de Hotspot necesarios para la creación del cliente en Dobra.",
+        "Se debe crear un nuevo registro de cliente en Dobra con la información enviada.",
+        "Hotspot debe recibir una confirmación de creación exitosa (ej. HTTP 201) y, si es posible, almacenar el ID del cliente de Dobra.",
+        "Deben existir reglas de negocio claras y configurables que determinen qué acciones en Hotspot activan la creación del cliente en Dobra.",
+        "El cliente creado en Dobra debe estar disponible de forma inmediata para su uso en cotizaciones.",
+        "Se debe implementar un sistema de registro y notificación de errores detallado para fallos en la API o en la creación del cliente.",
+        "Debe asegurarse la consistencia de los datos del cliente (ej. nombre, contacto) entre ambas plataformas tras la creación."
+      ]
+    },
+    {
+      "id_historia": "HU-002",
+      "titulo": "Actualización de negocio en Hotspot tras gestión en Dobra",
+      "usuario": "Sistema Dobra, Vendedor, Equipo de ventas, Comercial",
+      "requerimiento": "Actualizar automáticamente el estado y detalles de un negocio en Hotspot cuando se finaliza una cotización u orden de venta en el ERP Dobra.",
+      "objetivo": "Mantener sincronizada la información del pipeline de ventas entre Hotspot y Dobra, reflejando el progreso comercial y actualizando el valor del negocio.",
+      "criterios_de_aceptacion": [
+        "Al finalizar la creación/actualización de una cotización u orden de venta en Dobra que esté vinculada a un negocio de Hotspot (mediante un ID de Hotspot ingresado en Dobra), se debe disparar una llamada a la API de Hotspot.",
+        "La API debe identificar el negocio correcto en Hotspot utilizando el ID proporcionado.",
+        "Se debe actualizar el estado del pipeline del negocio en Hotspot a la etapa correspondiente (ej. 'Cotización Enviada').",
+        "Se debe actualizar el campo 'Valor' del negocio en Hotspot con el monto total de la cotización/orden de venta de Dobra.",
+        "Se debe almacenar el ID único de la cotización/orden de venta de Dobra en un campo personalizado del negocio en Hotspot.",
+        "El sistema debe registrar detalladamente los errores en caso de fallos (ej. negocio no encontrado, error de API) e implementar notificaciones."
+      ]
+    },
+    {
+      "id_historia": "HU-003",
+      "titulo": "Marcar negocio como 'Ganado' en Hotspot al facturar en Dobra",
+      "usuario": "Sistema Dobra, Equipo de contabilidad",
+      "requerimiento": "Actualizar automáticamente el estado de un negocio en Hotspot a 'Ganado' cuando se emite la factura de venta correspondiente en el ERP Dobra.",
+      "objetivo": "Reflejar con precisión el cierre exitoso de negocios en el pipeline de ventas de Hotspot y mantener la sincronización financiera y comercial.",
+      "criterios_de_aceptacion": [
+        "Cuando el equipo de contabilidad emite una factura de venta en Dobra asociada a un negocio de Hotspot (identificado a través del ID de negocio o ID de cotización/OV previamente sincronizado), se debe disparar una llamada a la API de Hotspot.",
+        "La API debe localizar y actualizar el negocio correspondiente en Hotspot.",
+        "El estado del pipeline del negocio en Hotspot se debe cambiar automáticamente a la etapa 'Ganado' (o su equivalente definido).",
+        "La actualización debe ser inmediata o lo más cercana posible a la emisión de la factura.",
+        "El sistema debe registrar errores y notificar en caso de fallos en la actualización."
+      ]
+    },
+    {
+      "id_historia": "HU-004",
+      "titulo": "Actualizar negocio en Hotspot por Nota de Crédito en Dobra",
+      "usuario": "Sistema Dobra, Equipo de contabilidad, Vendedor",
+      "requerimiento": "Actualizar automáticamente el estado de un negocio en Hotspot cuando se emite una nota de crédito asociada en el ERP Dobra.",
+      "objetivo": "Reflejar en Hotspot los negocios que no se concretaron o sufrieron modificaciones post-facturación, permitiendo al vendedor gestionar adecuadamente el estado final (ej. 'Perdido' o 'Negociación').",
+      "criterios_de_aceptacion": [
+        "Al emitirse una nota de crédito en Dobra asociada a un negocio de Hotspot, se debe disparar una llamada a la API de Hotspot.",
+        "La API debe identificar el negocio correspondiente en Hotspot.",
+        "El estado del pipeline del negocio en Hotspot se debe cambiar automáticamente a una etapa de 'Negociación' (o equivalente definido) para revisión del vendedor.",
+        "El sistema debe permitir que el vendedor posteriormente cambie manualmente el estado a 'Perdido' si corresponde.",
+        "Debe validarse que la acción corresponda a una nota de crédito válida y registrada en Dobra.",
+        "El sistema debe registrar errores y notificar en caso de fallos en la actualización."
+      ]
+    },
+    {
+      "id_historia": "HU-005",
+      "titulo": "Asociación manual de ID de negocio Hotspot en Dobra",
+      "usuario": "Vendedor",
+      "requerimiento": "Poder ingresar y asociar manualmente el ID único de un negocio de Hotspot al crear o gestionar una cotización/orden de venta en Dobra.",
+      "objetivo": "Asegurar la trazabilidad entre los negocios de Hotspot y las transacciones en Dobra para permitir la correcta sincronización de actualizaciones.",
+      "criterios_de_aceptacion": [
+        "El ID del negocio generado en Hotspot debe ser fácilmente accesible o visible para el vendedor.",
+        "Dobra debe proveer un campo para que el vendedor ingrese manualmente este ID de Hotspot en la cotización/orden de venta.",
+        "Opcionalmente, el sistema en Dobra podría intentar validar que el ID ingresado corresponda a un negocio existente en Hotspot (si es técnicamente factible)."
+      ]
+    },
+    {
+      "id_historia": "HU-006",
+      "titulo": "Integración de Atom (WhatsApp) con Hotspot para gestión de prospectos",
+      "usuario": "Equipo de marketing, Cliente interesado",
+      "requerimiento": "Integrar la plataforma Atom (conectada a WhatsApp) con Hotspot para centralizar la comunicación y automatizar la creación de contactos y negocios.",
+      "objetivo": "Gestionar eficientemente las conversaciones con prospectos provenientes de WhatsApp, automatizar la creación de registros en Hotspot y facilitar la calificación de leads.",
+      "criterios_de_aceptacion": [
+        "Las conversaciones de clientes iniciadas por WhatsApp y gestionadas en Atom deben registrarse.",
+        "Atom debe poder crear automáticamente un contacto en Hotspot (idealmente a través de una integración nativa o una configuración sencilla).",
+        "Debe ser posible crear negocios en Hotspot basados en interacciones o calificaciones realizadas en Atom (ej. mediante flujos de chatbot).",
+        "Los flujos de chatbot o IA en Atom deben poder calificar prospectos, y esta calificación o el resultado debe reflejarse o impulsar acciones en Hotspot."
+      ]
+    },
+    {
+      "id_historia": "HU-007",
+      "titulo": "Integración de plataforma de mensajería 'Hello' con WhatsApp",
+      "usuario": "Administrador del sistema",
+      "requerimiento": "Integrar la plataforma de mensajería 'Hello' con WhatsApp.",
+      "objetivo": "Centralizar las comunicaciones de ventas y soporte que ocurren vía WhatsApp dentro de la plataforma 'Hello' y asociarlas con clientes del ERP.",
+      "criterios_de_aceptacion": [
+        "La integración debe permitir enviar y recibir mensajes de WhatsApp directamente desde la plataforma 'Hello'.",
+        "Debe ser posible asociar conversaciones o contactos de WhatsApp con los registros de clientes existentes en el sistema ERP.",
+        "La integración debe ser segura, cumpliendo con las políticas de WhatsApp y las normativas de privacidad de datos."
+      ]
+    }
+  ],
+  "preguntas_para_aclarar": [
+    "¿Cuáles son las reglas de negocio exactas y los criterios específicos (ej. etapa del pipeline, tipo de negocio, valor mínimo, origen específico como Atom) que deben cumplirse en Hotspot para activar automáticamente la creación de un cliente en Dobra?",
+    "¿Se requiere una tabla de mapeo detallada que especifique qué campos de Contacto/Negocio de Hotspot se transferirán a qué campos (obligatorios y opcionales) en Dobra para la creación de clientes?",
+    "Para la asociación del ID de negocio de Hotspot en Dobra: ¿Cómo se facilitará al vendedor la obtención e ingreso de este ID en Dobra para minimizar errores? ¿Será un campo de texto libre o Dobra podría ofrecer alguna funcionalidad de búsqueda/validación contra Hotspot? ¿Es un campo obligatorio en Dobra para proceder?",
+    "¿A qué estados/etapas específicas del pipeline de ventas en Hotspot deben moverse los negocios tras la creación/finalización de una cotización/orden de venta en Dobra, y tras la emisión de una nota de crédito (antes de ser marcado como 'Perdido' por el vendedor)?",
+    "¿Cómo se identificará el negocio de Hotspot para las actualizaciones originadas por una factura o nota de crédito en Dobra? ¿Se utilizará el 'ID de Cotización Dobra' (previamente almacenado en Hotspot) o se requerirá ingresar nuevamente el ID del negocio de Hotspot en Dobra?",
+    "Referente al flujo de nota de crédito: ¿El cambio de estado en Hotspot a 'Negociación' es completamente automático tras la emisión de la NC en Dobra? ¿El posterior cambio a 'Perdido' es siempre una acción manual del vendedor en Hotspot, o podría haber escenarios automáticos?",
+    "¿Cuál es el mecanismo detallado esperado para el manejo de errores (ej. reintentos automáticos, colas de mensajes fallidos, logs específicos) y el sistema de notificaciones (ej. email a roles específicos, dashboard) para cada una de las integraciones API (Hotspot-Dobra y Dobra-Hotspot)?",
+    "¿La documentación de la API de Dobra para la creación de clientes desde un sistema externo (Hotspot) está completa y disponible (incluyendo autenticación, endpoints, formato de datos, manejo de errores)? Si no, ¿cuál es el plan para su desarrollo y entrega?",
+    "Al actualizar un negocio en Hotspot desde Dobra (post-cotización), ¿a qué ID específico se refiere 'ID de Dobra' (ID de cotización, ID de orden de venta)? ¿En qué campo exacto (estándar o personalizado) de Hotspot se almacenará este ID?",
+    "¿La creación de clientes en Dobra desde Hotspot se activará para todos los negocios nuevos que cumplan la regla, o exclusivamente para aquellos originados/gestionados a través de la integración con Atom?",
+    "¿Se puede confirmar que los endpoints existentes de la API de Dobra (para enviar actualizaciones de cotizaciones, facturas, notas de crédito a Hotspot) son completamente funcionales para los requisitos definidos y están cubiertos en detalle por la documentación actual (métodos, payloads, respuestas, errores)?",
+    "¿Es necesario crear nuevas propiedades personalizadas en los objetos de Negocio (Deal) o Contacto en Hotspot para almacenar IDs de Dobra, estados de sincronización u otra información relevante para estas integraciones? Si es así, ¿cuáles serían?",
+    "¿Existen escenarios donde un cambio de estado manual de un negocio en Hotspot (realizado por un vendedor) deba reflejarse o notificarse a Dobra, o la sincronización de estados es estrictamente unidireccional desde Dobra hacia Hotspot para los eventos clave definidos?",
+    "Respecto a la integración Atom-Hotspot: ¿La creación de contactos y negocios en Hotspot es siempre automática y por defecto al interactuar un prospecto vía Atom, o existen configuraciones/condiciones en Atom que el usuario puede definir para controlar este comportamiento?",
+    "¿Cómo se manejará la validación de datos y la prevención de duplicados de clientes/contactos entre Hotspot y Dobra, especialmente si un cliente ya existe en Dobra pero se crea un nuevo negocio en Hotspot para él?",
+    "¿Cuáles son todos los posibles estados del pipeline de ventas en Hotspot y cómo se mapean exactamente con las acciones y estados en Dobra (cotización, orden de venta, factura, nota de crédito)?",
+    "¿Existen requisitos específicos de tiempo de respuesta (performance) para las llamadas API entre los sistemas?",
+    "¿Cómo se gestionarán los permisos de usuario en Hotspot y Dobra para acceder o disparar estas funcionalidades integradas?",
+    "¿Se requiere un log de auditoría detallado de todas las transacciones y actualizaciones realizadas a través de las integraciones entre sistemas?",
+    "¿Hay alguna estrategia o consideración para manejar negocios y clientes que ya existen en ambos sistemas antes de la implementación de estas integraciones automáticas (datos históricos)?",
+    "¿La documentación de las APIs (tanto de Hotspot como de Dobra) cubre adecuadamente los casos límite y los códigos de error específicos que se pueden esperar?",
+    "¿Cómo se gestionará la sincronización o el manejo de errores si un registro vinculado (negocio, cliente, cotización) se elimina o modifica significativamente en uno de los sistemas de forma inesperada?",
+    "¿La integración Atom-Hotspot requiere algún desarrollo adicional o se basa completamente en funcionalidades nativas ya existentes?",
+    "¿Qué flujos de chatbot específicos están predefinidos o se planean en Atom y cómo impactarán exactamente la creación o calificación de negocios en Hotspot?",
+    "¿Existen restricciones técnicas conocidas en las APIs de Hotspot o Dobra (ej. límites de llamadas API por minuto/día, políticas de autenticación complejas) que deban considerarse en el diseño de la integración?",
+    "¿Qué acciones específicas se deben tomar en caso de errores persistentes durante la integración (ej. si una API está caída por un tiempo prolongado)?",
+    "¿Cómo se asegurará la seguridad de los datos sensibles del cliente durante la transmisión entre Hotspot y Dobra a través de las APIs?"
+  ]
+}
