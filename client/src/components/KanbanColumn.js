@@ -16,12 +16,29 @@ import StoryCard from './StoryCard';
  * @param {Function} props.onDragEnd - Function to handle drag end event
  */
 const KanbanColumn = ({ column, stories, onOpenStoryModal, onCriterionCheck, onCriteriaReorder, onDrop, onDragOver, onDragStart, onDragEnd }) => {
+  // Manejar el evento de arrastrar sobre la columna
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    e.dataTransfer.dropEffect = 'move';
+    // Llamar al manejador proporcionado si existe
+    if (onDragOver) onDragOver(e);
+  };
+
+  // Manejar el evento de soltar en la columna
+  const handleDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    // Llamar al manejador proporcionado si existe
+    if (onDrop) onDrop(e);
+  };
+
   return (
     <div
       className="kanban-column bg-slate-200 p-3 rounded-lg shadow flex-shrink-0"
       style={{ width: '300px', marginRight: '1.5rem' }}
-      onDrop={onDrop}
-      onDragOver={onDragOver}
+      onDrop={handleDrop}
+      onDragOver={handleDragOver}
     >
       <div className="flex justify-between items-center mb-3 border-b-2 border-slate-300 pb-2">
         <h2 className="text-lg font-semibold text-slate-700">{column.name}</h2>

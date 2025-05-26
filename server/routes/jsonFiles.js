@@ -2,12 +2,31 @@ const express = require('express');
 const router = express.Router();
 const JsonFile = require('../models/JsonFile');
 const Story = require('../models/Story');
+const Column = require('../models/Column');
 
 // Obtener todos los archivos JSON
 router.get('/', async (req, res) => {
   try {
     const jsonFiles = await JsonFile.find().sort({ uploadDate: -1 });
     res.json(jsonFiles);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Obtener un archivo JSON específico por nombre de archivo
+router.get('/:fileName', async (req, res) => {
+  try {
+    const fileName = req.params.fileName;
+    
+    // Buscar el archivo por nombre
+    const jsonFile = await JsonFile.findOne({ fileName });
+    
+    if (!jsonFile) {
+      return res.status(404).json({ message: 'JSON file not found' });
+    }
+    
+    res.json(jsonFile);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

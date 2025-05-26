@@ -14,6 +14,10 @@ const JsonFileSchema = new mongoose.Schema({
   storyCount: {
     type: Number,
     default: 0
+  },
+  preguntas_para_aclarar: {
+    type: [String],
+    default: []
   }
 }, {
   timestamps: true

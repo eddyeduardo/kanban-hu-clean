@@ -34,6 +34,7 @@ const apiService = {
   
   // JSON Files operations
   getJsonFiles: () => api.get('/json-files'),
+  getJsonFile: (fileName) => api.get(`/json-files/${encodeURIComponent(fileName)}`),
   getStoriesByJsonFile: (fileName) => api.get(`/json-files/${encodeURIComponent(fileName)}/stories`),
   
   // Project Configuration operations

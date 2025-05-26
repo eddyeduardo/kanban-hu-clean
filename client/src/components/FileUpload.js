@@ -80,7 +80,9 @@ const FileUpload = ({ onFileUpload, onFileSelect, currentJsonFile, jsonFiles }) 
       const dataWithFileName = {
         jsonFileName: fileName,
         historias_de_usuario: jsonData.historias_de_usuario,
-        uploadDate
+        uploadDate,
+        // Incluir las preguntas si existen en el JSON
+        preguntas_para_aclarar: jsonData.preguntas_para_aclarar || []
       };
       
       // Import stories

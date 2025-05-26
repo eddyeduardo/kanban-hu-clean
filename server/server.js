@@ -17,7 +17,7 @@ const PORT = process.env.PORT || 5000;
 // Configuración de CORS mejorada
 const corsOptions = {
   origin: 'http://localhost:3000', // Origen del cliente React
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true
 };
@@ -38,6 +38,10 @@ mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27019/proyecto-ad
 })
 .then(() => console.log('MongoDB connected successfully'))
 .catch(err => console.error('MongoDB connection error:', err));
+
+// Aumentar el límite de tamaño de carga (por defecto es ~1MB)
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // Routes
 app.use('/api/columns', columnsRoutes);

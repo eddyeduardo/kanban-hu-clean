@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import KanbanColumn from './KanbanColumn';
+import api from '../services/api';
 
 /**
  * SimpleKanban - Un componente Kanban simple que implementa arrastrar y soltar sin usar react-beautiful-dnd
@@ -13,32 +14,49 @@ import KanbanColumn from './KanbanColumn';
  * @param {Function} props.onCriteriaReorder - Función para manejar el reordenamiento de criterios
  */
 const SimpleKanban = ({ columns, stories, onStoryMove, onOpenStoryModal, onCriterionCheck, onCriteriaReorder }) => {
+  const [localStories, setLocalStories] = useState(stories);
+  
+  // Sincronizar las historias locales cuando cambian las props
+  useEffect(() => {
+    setLocalStories(stories);
+  }, [stories]);
+  
+  // Función auxiliar para verificar si una historia pertenece a una columna
+  const storyBelongsToColumn = (story, columnId) => {
+    // Si story.column es un string (ID), comparamos directamente
+    if (typeof story.column === 'string') {
+      return story.column === columnId;
+    }
+    
+    // Si story.column es un objeto, comparamos con su _id
+    if (story.column && story.column._id) {
+      return story.column._id === columnId;
+    }
+    
+    // Si story.column es un ObjectId de MongoDB (como string)
+    return story.column === columnId || story.column === columnId.toString();
+  };
   const [draggedStory, setDraggedStory] = useState(null);
 
   // Filtrar historias por columna
   const getStoriesForColumn = (columnId) => {
-    return stories
-      .filter(story => {
-        // Manejar diferentes formatos de IDs de columna
-        if (typeof story.column === 'string') {
-          return story.column === columnId;
-        }
-        if (story.column && story.column._id) {
-          return story.column._id === columnId;
-        }
-        return story.column === columnId || story.column === columnId.toString();
-      })
-      .sort((a, b) => a.position - b.position);
+    if (!localStories) return [];
+    
+    return localStories
+      .filter(story => storyBelongsToColumn(story, columnId))
+      .sort((a, b) => (a.position || 0) - (b.position || 0));
   };
 
   // Iniciar arrastre
   const handleDragStart = (e, story) => {
+    e.stopPropagation();
     setDraggedStory(story);
     e.dataTransfer.effectAllowed = 'move';
     // Necesario para Firefox
     e.dataTransfer.setData('text/plain', story._id);
     // Añadir clase de estilo para el elemento arrastrado
     e.target.classList.add('dragging');
+    console.log('Iniciando arrastre de:', story.title);
   };
 
   // Permitir soltar
@@ -48,30 +66,65 @@ const SimpleKanban = ({ columns, stories, onStoryMove, onOpenStoryModal, onCrite
   };
 
   // Manejar soltar en una columna
-  const handleDrop = (e, columnId) => {
+  const handleDrop = async (e, columnId) => {
     e.preventDefault();
-    if (!draggedStory) return;
+    e.stopPropagation();
+    
+    if (!draggedStory) {
+      console.log('No hay historia arrastrada');
+      return;
+    }
+
+    console.log(`Soltando historia en columna ${columnId}`, { draggedStory });
 
     // Limpiar estilos
-    document.querySelectorAll('.dragging').forEach(el => {
+    const draggingElements = document.querySelectorAll('.dragging');
+    draggingElements.forEach(el => {
       el.classList.remove('dragging');
     });
 
     // Si la historia ya está en esta columna, no hacer nada
-    if (draggedStory.column === columnId || 
-        (draggedStory.column && draggedStory.column._id === columnId)) {
+    if (storyBelongsToColumn(draggedStory, columnId)) {
+      console.log('La historia ya está en esta columna');
+      setDraggedStory(null);
       return;
     }
 
-    // Calcular la nueva posición (al final de la columna)
-    const columnStories = getStoriesForColumn(columnId);
-    const newPosition = columnStories.length;
-
-    // Llamar a la función de callback para mover la historia
-    onStoryMove(draggedStory._id, columnId, newPosition);
-    
-    // Limpiar estado
-    setDraggedStory(null);
+    try {
+      console.log(`Actualizando historia ${draggedStory._id} a columna ${columnId}`);
+      
+      // Actualizar la columna de la historia en el servidor
+      await api.updateStory(draggedStory._id, { column: columnId });
+      
+      // Actualizar el estado local
+      const updatedStories = localStories.map(story => {
+        if (story._id === draggedStory._id) {
+          const updatedStory = { 
+            ...story, 
+            column: columnId,
+            // Asegurarse de que column es un objeto con _id para la comparación
+            column: { _id: columnId } 
+          };
+          console.log('Historia actualizada:', updatedStory);
+          return updatedStory;
+        }
+        return story;
+      });
+      
+      setLocalStories(updatedStories);
+      
+      // Si hay un callback de onStoryMove, llamarlo
+      if (onStoryMove) {
+        const columnStories = getStoriesForColumn(columnId);
+        const newPosition = columnStories.length;
+        console.log(`Llamando a onStoryMove con posición ${newPosition}`);
+        onStoryMove(draggedStory._id, columnId, newPosition);
+      }
+    } catch (error) {
+      console.error('Error al mover la historia:', error);
+    } finally {
+      setDraggedStory(null);
+    }
   };
 
   // Terminar arrastre

@@ -10,11 +10,13 @@ import Dashboard from './components/Dashboard';
 import UserStoryManagement from './components/UserStoryManagement';
 import VideoTranscription from './components/VideoTranscription';
 import ScopeView from './components/ScopeView';
+import PreguntasTab from './components/PreguntasTab';
 import api from './services/api';
 
 function App() {
   const [columns, setColumns] = useState([]);
   const [stories, setStories] = useState([]);
+  const [preguntas, setPreguntas] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [currentJsonFile, setCurrentJsonFile] = useState(null);
@@ -52,7 +54,7 @@ function App() {
 
   // Cargar datos iniciales
   useEffect(() => {
-    console.log('App - Estado inicial:', { columns, stories, currentJsonFile });
+    console.log('App - Estado inicial:', { columns, stories, currentJsonFile, preguntas });
     const fetchData = async () => {
       try {
         setLoading(true);
@@ -148,6 +150,21 @@ function App() {
         setStories(storiesResponse.data.stories);
       }
       
+      // Cargar las preguntas asociadas a este archivo JSON
+      try {
+        const jsonFileResponse = await api.getJsonFile(jsonFileName);
+        if (jsonFileResponse.data && jsonFileResponse.data.preguntas_para_aclarar) {
+          console.log('Preguntas cargadas desde la base de datos:', jsonFileResponse.data.preguntas_para_aclarar);
+          setPreguntas(jsonFileResponse.data.preguntas_para_aclarar);
+        } else {
+          console.log('No se encontraron preguntas para este archivo en la base de datos');
+          setPreguntas([]);
+        }
+      } catch (preguntasError) {
+        console.error('Error al cargar las preguntas:', preguntasError);
+        setPreguntas([]);
+      }
+      
       setLoading(false);
       return response.data.message || `Historias importadas correctamente desde ${jsonFileName}`;
     } catch (err) {
@@ -174,6 +191,8 @@ function App() {
   const handleLoadJsonFile = async (fileName) => {
     try {
       setLoading(true);
+      
+      // Cargar las historias y columnas del archivo seleccionado
       const response = await api.getStoriesByJsonFile(fileName);
       
       // Actualizar las columnas con las específicas de este archivo JSON y las columnas por defecto
@@ -187,6 +206,21 @@ function App() {
       
       // Actualizar las historias con las del archivo seleccionado
       setStories(response.data.stories);
+      
+      // Cargar las preguntas asociadas a este archivo JSON
+      try {
+        const jsonFileResponse = await api.getJsonFile(fileName);
+        if (jsonFileResponse.data && jsonFileResponse.data.preguntas_para_aclarar) {
+          console.log('Preguntas cargadas al seleccionar archivo:', jsonFileResponse.data.preguntas_para_aclarar);
+          setPreguntas(jsonFileResponse.data.preguntas_para_aclarar);
+        } else {
+          console.log('No se encontraron preguntas para el archivo seleccionado');
+          setPreguntas([]);
+        }
+      } catch (preguntasError) {
+        console.error('Error al cargar las preguntas del archivo:', preguntasError);
+        setPreguntas([]);
+      }
       
       // Guardar el nombre del archivo actual en el estado
       setCurrentJsonFile(fileName);
@@ -446,6 +480,9 @@ function App() {
               ),
               'Transcripción': (
                 <VideoTranscription />
+              ),
+              'Preguntas': (
+                <PreguntasTab preguntas={preguntas} currentJsonFile={currentJsonFile} />
               )
             }}
           />

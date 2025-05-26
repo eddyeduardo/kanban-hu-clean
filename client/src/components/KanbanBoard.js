@@ -1,6 +1,6 @@
-import React from 'react';
-// Removiendo la importación no utilizada de Droppable
+import React, { useState } from 'react';
 import KanbanColumn from './KanbanColumn';
+import api from '../services/api';
 
 /**
  * KanbanBoard component renders the entire kanban board with all columns
@@ -10,8 +10,79 @@ import KanbanColumn from './KanbanColumn';
  * @param {Array} props.stories - List of all stories
  * @param {Function} props.onOpenStoryModal - Function to open story modal
  * @param {Function} props.onCriterionCheck - Function to handle criterion check status change
+ * @param {Function} props.onStoriesChange - Function to update stories after drag and drop
  */
-const KanbanBoard = ({ columns, stories, onOpenStoryModal, onCriterionCheck }) => {
+const KanbanBoard = ({ columns, stories, onOpenStoryModal, onCriterionCheck, onStoriesChange }) => {
+  const [draggedStory, setDraggedStory] = useState(null);
+  const [isDragging, setIsDragging] = useState(false);
+
+  // Handle drag start
+  const handleDragStart = (e, story) => {
+    e.stopPropagation();
+    setDraggedStory(story);
+    setIsDragging(true);
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', story._id);
+  };
+
+  // Handle drag end
+  const handleDragEnd = () => {
+    setIsDragging(false);
+    setDraggedStory(null);
+  };
+
+  // Handle drag over
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  // Handle drop
+  const handleDrop = async (e, targetColumnId) => {
+    e.preventDefault();
+    
+    if (!draggedStory || draggedStory.column === targetColumnId) {
+      return;
+    }
+
+    try {
+      // Update the story's column in the database
+      const updatedStory = { ...draggedStory, column: targetColumnId };
+      
+      // Call the API to update the story
+      await api.updateStory(draggedStory._id, { column: targetColumnId });
+      
+      // Update the local state
+      if (onStoriesChange) {
+        const updatedStories = stories.map(story => 
+          story._id === draggedStory._id ? { ...story, column: targetColumnId } : story
+        );
+        onStoriesChange(updatedStories);
+      }
+      
+      console.log(`Moved story ${draggedStory.title} to column ${targetColumnId}`);
+    } catch (error) {
+      console.error('Error moving story:', error);
+    }
+  };
+
+  // Handle criteria reordering
+  const handleCriteriaReorder = async (storyId, newCriteria) => {
+    try {
+      // Update the story's criteria in the database
+      await api.updateStory(storyId, { criteria: newCriteria });
+      
+      // Update the local state
+      if (onStoriesChange) {
+        const updatedStories = stories.map(story => 
+          story._id === storyId ? { ...story, criteria: newCriteria } : story
+        );
+        onStoriesChange(updatedStories);
+      }
+    } catch (error) {
+      console.error('Error reordering criteria:', error);
+    }
+  };
   // Función auxiliar para verificar si una historia pertenece a una columna
   const storyBelongsToColumn = (story, columnId) => {
     // Si story.column es un string (ID), comparamos directamente
@@ -46,6 +117,11 @@ const KanbanBoard = ({ columns, stories, onOpenStoryModal, onCriterionCheck }) =
             stories={sortedStories}
             onOpenStoryModal={onOpenStoryModal}
             onCriterionCheck={onCriterionCheck}
+            onCriteriaReorder={handleCriteriaReorder}
+            onDragStart={handleDragStart}
+            onDragEnd={handleDragEnd}
+            onDragOver={handleDragOver}
+            onDrop={(e) => handleDrop(e, column._id)}
           />
         );
       })}

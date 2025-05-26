@@ -169,8 +169,8 @@ router.post('/import', async (req, res) => {
       return res.status(400).json({ message: 'Empty request body detected. Please ensure you are sending valid JSON data with the correct Content-Type header.' });
     }
     
-    // Obtener el nombre del archivo JSON y las historias de usuario
-    const { jsonFileName, historias_de_usuario } = req.body;
+    // Obtener el nombre del archivo JSON, las historias de usuario y las preguntas
+    const { jsonFileName, historias_de_usuario, preguntas_para_aclarar = [] } = req.body;
     
     if (!historias_de_usuario || !Array.isArray(historias_de_usuario)) {
       console.log('Invalid data format:', req.body);
@@ -200,14 +200,22 @@ router.post('/import', async (req, res) => {
       }
       jsonFile = new JsonFile({
         fileName: jsonFileName,
+        uploadDate,
         storyCount: historias_de_usuario.length,
-        uploadDate
+        preguntas_para_aclarar: Array.isArray(preguntas_para_aclarar) ? preguntas_para_aclarar : []
       });
-      await jsonFile.save();
       console.log(`Created new JSON file record: ${jsonFileName}`);
     } else {
-      console.log(`Found existing JSON file record: ${jsonFileName}`);
+      // Si el archivo ya existe, actualizar el contador de historias y las preguntas
+      jsonFile.storyCount = historias_de_usuario.length;
+      if (Array.isArray(preguntas_para_aclarar)) {
+        jsonFile.preguntas_para_aclarar = preguntas_para_aclarar;
+      }
+      console.log(`Updated existing JSON file record: ${jsonFileName}`);
     }
+    
+    // Guardar los cambios en el archivo JSON
+    await jsonFile.save();
     
     // Verificar si existe la columna "Por Hacer" como columna por defecto
     let todoColumn = await Column.findOne({ name: 'Por Hacer', isDefault: true });

@@ -16,12 +16,34 @@ import DraggableCriteriaList from './DraggableCriteriaList';
 const StoryCard = ({ story, index, onEdit, onCriterionCheck, onCriteriaReorder, onDragStart, onDragEnd }) => {
   const draggable = true;
 
+  // Manejar el inicio del arrastre
+  const handleDragStart = (e) => {
+    e.stopPropagation();
+    // Asegurarse de que el efecto sea 'move'
+    e.dataTransfer.effectAllowed = 'move';
+    // Establecer los datos que se transferirán
+    e.dataTransfer.setData('text/plain', story._id);
+    // Añadir clase para el estilo durante el arrastre
+    e.currentTarget.classList.add('dragging');
+    // Llamar al manejador proporcionado si existe
+    if (onDragStart) onDragStart(e, story);
+  };
+
+  // Manejar el final del arrastre
+  const handleDragEnd = (e) => {
+    e.stopPropagation();
+    // Remover la clase de arrastre
+    e.currentTarget.classList.remove('dragging');
+    // Llamar al manejador proporcionado si existe
+    if (onDragEnd) onDragEnd(e);
+  };
+
   return (
     <div
       className="kanban-card bg-white p-3 rounded-md shadow-sm cursor-grab active:cursor-grabbing text-sm"
-      draggable={draggable}
-      onDragStart={onDragStart}
-      onDragEnd={onDragEnd}
+      draggable={true}
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
       onClick={onEdit}
     >
       <h3 className="font-semibold text-blue-600 mb-1">{story.title || 'Historia sin título'}</h3>
