@@ -1,0 +1,414 @@
+import React, { useState, useMemo, useCallback, useRef } from 'react';
+import { 
+  DndContext, 
+  closestCenter, 
+  KeyboardSensor, 
+  PointerSensor, 
+  useSensor, 
+  useSensors, 
+  SortableContext, 
+  sortableKeyboardCoordinates,
+  DragOverlay,
+  defaultDropAnimation
+} from '@dnd-kit/core';
+import { arrayMove, horizontalListSortingStrategy } from '@dnd-kit/sortable';
+import KanbanColumn from './KanbanColumn';
+import { restrictToHorizontalAxis, restrictToWindowEdges } from '@dnd-kit/modifiers';
+import api from '../services/api';
+import SortableColumn from './SortableColumn';
+import { DragDropContext, useDragDrop } from '../contexts/DragDropContext';
+
+/**
+ * KanbanBoard component renders the entire kanban board with all columns
+ * 
+ * @param {Object} props - Component props
+ * @param {Array} props.columns - List of columns
+ * @param {Array} props.stories - List of all stories
+ * @param {Function} props.onOpenStoryModal - Function to open story modal
+ * @param {Function} props.onCriterionCheck - Function to handle criterion check status change
+ * @param {Function} props.onStoriesChange - Function to update stories after drag and drop
+ */
+const KanbanBoard = ({ columns, stories, onOpenStoryModal, onCriterionCheck, onStoriesChange, onColumnsChange }) => {
+  const [draggedStory, setDraggedStory] = useState(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [activeColumn, setActiveColumn] = useState(null);
+  
+  // Configuración de sensores mejorada para un mejor rendimiento
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8, // Distancia mínima para activar el arrastre
+        delay: 150, // Pequeño retraso para evitar activaciones accidentales
+        tolerance: 5 // Tolerancia para el movimiento del puntero
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+  
+  // Configuración de la animación de soltado
+  const dropAnimation = useMemo(() => ({
+    ...defaultDropAnimation,
+    duration: 250,
+    easing: 'cubic-bezier(0.18, 0.67, 0.6, 0.99)',
+  }), []);
+
+  // Referencia al contenedor del tablero
+  const boardRef = useRef(null);
+
+  // Modificadores para el arrastre
+  const modifiers = useMemo(() => [
+    restrictToHorizontalAxis,
+    restrictToWindowEdges
+  ], []);
+
+  // Referencia al contenedor del tablero
+  const boardRef = useRef(null);
+  
+  // Configuración de los modificadores para el arrastre
+  const modifiers = useMemo(() => {
+  const modifiers = React.useMemo(() => {
+    const container = boardRef.current;
+    return [
+      restrictToHorizontalAxis,
+      container && restrictToWindowEdges({
+        boundary: container,
+        windowScroller: {
+          enabled: true,
+          marginTop: 10,
+          marginBottom: 10,
+          marginLeft: 10,
+          marginRight: 10,
+        }
+      })
+    ].filter(Boolean);
+  }, []);
+  
+  // Manejar el inicio del arrastre (tanto para columnas como para historias)
+  const handleDragStart = useCallback((event) => {
+    const { active } = event;
+    
+    // Verificar si es una columna
+    const column = columns.find(col => col._id === active.id);
+    if (column) {
+      setActiveColumn(column);
+      return;
+    }
+    
+    // Verificar si es una historia
+    const story = stories.find(s => s._id === active.id);
+    if (story) {
+      setDraggedStory(story);
+      setIsDragging(true);
+    }
+  }, [columns, stories]);
+  
+  // Manejar el final del arrastre (tanto para columnas como para historias)
+  const handleDragEnd = useCallback(async (event) => {
+    const { active, over } = event;
+    
+    if (!over) {
+      // No hay un destino de soltado válido
+      setIsDragging(false);
+      setDraggedStory(null);
+      setActiveColumn(null);
+      return;
+    }
+    
+    // Manejar reordenación de columnas
+    if (activeColumn && active.id !== over.id) {
+      // No permitir mover la primera columna
+      const oldIndex = columns.findIndex(col => col._id === active.id);
+      const newIndex = columns.findIndex(col => col._id === over.id);
+      
+      if (oldIndex === 0 || newIndex === 0) {
+        setActiveColumn(null);
+        return;
+      }
+      
+      // Reordenar las columnas
+      const newColumns = arrayMove(columns, oldIndex, newIndex);
+      
+      // Actualizar el estado local primero para una respuesta inmediata
+      if (onColumnsChange) {
+        onColumnsChange(newColumns);
+      }
+      
+      // Actualizar en el servidor en segundo plano
+      try {
+        const columnsToUpdate = newColumns.map((column, index) => ({
+          _id: column._id,
+          position: index,
+          name: column.name
+        }));
+        
+        console.log('Enviando columnas al servidor:', columnsToUpdate);
+        await api.reorderColumns(columnsToUpdate);
+      } catch (error) {
+        console.error('Error al actualizar el orden de las columnas:', error);
+        if (error.response) {
+          console.error('Detalles del error:', error.response.data);
+          alert(`Error: ${error.response.data.message || 'No se pudo guardar el orden de las columnas'}`);
+        } else {
+          alert('Error de conexión. Por favor, verifica tu conexión e inténtalo de nuevo.');
+        }
+        
+        // Revertir cambios en caso de error
+        if (onColumnsChange) {
+          onColumnsChange([...columns]);
+        }
+      }
+    } 
+    // Manejar movimiento de historias entre columnas
+    else if (draggedStory) {
+      const targetColumnId = over.id;
+      
+      if (draggedStory.column === targetColumnId) {
+        // No hacer nada si se suelta en la misma columna
+        setIsDragging(false);
+        setDraggedStory(null);
+        return;
+      }
+      
+      try {
+        // Actualizar la columna de la historia en la base de datos
+        await api.updateStory(draggedStory._id, { column: targetColumnId });
+        
+        // Actualizar el estado local
+        if (onStoriesChange) {
+          const updatedStories = stories.map(story => 
+            story._id === draggedStory._id 
+              ? { ...story, column: targetColumnId } 
+              : story
+          );
+          onStoriesChange(updatedStories);
+          console.log(`Moved story ${draggedStory.title} to column ${targetColumnId}`);
+        }
+      } catch (error) {
+        console.error('Error moving story:', error);
+      }
+    }
+    
+    // Limpiar el estado
+    setIsDragging(false);
+    setDraggedStory(null);
+    setActiveColumn(null);
+  }, [activeColumn, columns, draggedStory, onColumnsChange, onStoriesChange, stories]);
+  
+  // Manejar la cancelación del arrastre
+  const handleDragCancel = useCallback(() => {
+    setActiveColumn(null);
+    setDraggedStory(null);
+    setIsDragging(false);
+  }, []);
+
+  // Configurar el contexto de arrastre para las historias
+  const storiesContext = React.useMemo(() => ({
+    activeStory: draggedStory,
+    onStoryMove: async (storyId, targetColumnId) => {
+      try {
+        // Actualizar la historia en el servidor
+        await api.updateStory(storyId, { column: targetColumnId });
+        
+        // Actualizar el estado local
+        if (onStoriesChange) {
+          const updatedStories = stories.map(story => 
+            story._id === storyId 
+              ? { ...story, column: targetColumnId } 
+              : story
+          );
+          onStoriesChange(updatedStories);
+        }
+      } catch (error) {
+        console.error('Error moving story:', error);
+        // Mostrar mensaje de error al usuario
+        alert('No se pudo mover la historia. Por favor, inténtalo de nuevo.');
+      }
+    }
+  }), [draggedStory, onStoriesChange, stories]);
+
+  // Handle criteria reordering
+  const handleCriteriaReorder = async (storyId, newCriteria) => {
+    try {
+      // Update the story's criteria in the database
+      await api.updateStory(storyId, { criteria: newCriteria });
+      
+      // Update the local state
+      if (onStoriesChange) {
+        const updatedStories = stories.map(story => 
+          story._id === storyId ? { ...story, criteria: newCriteria } : story
+        );
+        onStoriesChange(updatedStories);
+      }
+    } catch (error) {
+      console.error('Error reordering criteria:', error);
+    }
+  };
+  // Función auxiliar para verificar si una historia pertenece a una columna
+  const storyBelongsToColumn = (story, columnId) => {
+    // Si story.column es un string (ID), comparamos directamente
+    if (typeof story.column === 'string') {
+      return story.column === columnId;
+    }
+    
+    // Si story.column es un objeto, comparamos con su _id
+    if (story.column && story.column._id) {
+      return story.column._id === columnId;
+    }
+    
+    // Si story.column es un ObjectId de MongoDB (como string)
+    return story.column === columnId || story.column === columnId.toString();
+  };
+
+// Manejar la cancelación del arrastre
+const handleDragCancel = useCallback(() => {
+  setActiveColumn(null);
+  setDraggedStory(null);
+  setIsDragging(false);
+}, []);
+
+// Configurar el contexto de arrastre para las historias
+const storiesContext = React.useMemo(() => ({
+  activeStory: draggedStory,
+  onStoryMove: async (storyId, targetColumnId) => {
+    try {
+      // Actualizar la historia en el servidor
+      await api.updateStory(storyId, { column: targetColumnId });
+      
+      // Actualizar el estado local
+      if (onStoriesChange) {
+        const updatedStories = stories.map(story => 
+          story._id === storyId 
+            ? { ...story, column: targetColumnId } 
+            : story
+        );
+        onStoriesChange(updatedStories);
+      }
+    } catch (error) {
+      console.error('Error moving story:', error);
+      // Mostrar mensaje de error al usuario
+      alert('No se pudo mover la historia. Por favor, inténtalo de nuevo.');
+    }
+  }
+}), [draggedStory, onStoriesChange, stories]);
+
+// Handle criteria reordering
+const handleCriteriaReorder = async (storyId, newCriteria) => {
+  try {
+    // Update the story's criteria in the database
+    await api.updateStory(storyId, { criteria: newCriteria });
+    
+    // Update the local state
+    if (onStoriesChange) {
+      const updatedStories = stories.map(story => 
+        story._id === storyId ? { ...story, criteria: newCriteria } : story
+      );
+      onStoriesChange(updatedStories);
+    }
+  } catch (error) {
+    console.error('Error reordering criteria:', error);
+  }
+};
+
+// Función auxiliar para verificar si una historia pertenece a una columna
+const storyBelongsToColumn = (story, columnId) => {
+  // Si story.column es un string (ID), comparamos directamente
+  if (typeof story.column === 'string') {
+    return story.column === columnId;
+  }
+  
+  // Si story.column es un objeto, comparamos con su _id
+  if (story.column && story.column._id) {
+    return story.column._id === columnId;
+  }
+  
+  // Si story.column es un ObjectId de MongoDB (como string)
+  return story.column === columnId || story.column === columnId.toString();
+};
+
+return (
+  <DragDropContext.Provider value={storiesContext}>
+    <div className="kanban-board-container" style={{ position: 'relative' }}>
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
+        modifiers={modifiers}
+      >
+        <SortableContext
+          items={columns.map(col => col._id)}
+          strategy={horizontalListSortingStrategy}
+        >
+          <div 
+            ref={boardRef}
+            className="flex overflow-x-auto pb-4"
+            style={{
+              minHeight: 'calc(100vh - 200px)',
+              padding: '0 1rem',
+              scrollBehavior: 'smooth',
+              marginBottom: '2rem',
+              minHeight: 'calc(100vh - 200px)',
+              alignItems: 'flex-start',
+              width: '100%',
+              WebkitOverflowScrolling: 'touch',
+              msOverflowStyle: 'none',
+              scrollbarWidth: 'none',
+              scrollBehavior: 'smooth',
+              scrollSnapType: 'x mandatory',
+              scrollPadding: '0 50px',
+              position: 'relative',
+              gap: '1.5rem'
+            }}
+          >
+            {columns.map((column, index) => {
+            // Filtrar historias para esta columna
+            const columnStories = stories.filter(story => storyBelongsToColumn(story, column._id));
+            
+            // Ordenar historias por posición
+            const sortedStories = [...columnStories].sort((a, b) => a.position - b.position);
+            
+            // La primera columna no es arrastrable
+            const isFirstColumn = index === 0;
+            
+            return (
+              <SortableColumn 
+                key={column._id} 
+                id={column._id}
+                disabled={isFirstColumn}
+              >
+                <KanbanColumn
+                  column={column}
+                  stories={sortedStories}
+                  onOpenStoryModal={onOpenStoryModal}
+                  onCriterionCheck={onCriterionCheck}
+                  onCriteriaReorder={handleCriteriaReorder}
+                  isDragging={activeColumn && activeColumn._id === column._id}
+                />
+              </SortableColumn>
+            );
+          })}
+        </div>
+            </div>
+          </SortableContext>
+          
+          <DragOverlay dropAnimation={dropAnimation}>
+            {activeColumn ? (
+              <KanbanColumn 
+                column={activeColumn} 
+                stories={stories.filter(story => storyBelongsToColumn(story, activeColumn._id))}
+                isDragging={true}
+              />
+            ) : null}
+          </DragOverlay>
+        </DndContext>
+      </div>
+    </DragDropContext.Provider>
+  );
+};
+
+// Memoize the KanbanBoard component to prevent unnecessary re-renders
+const MemoizedKanbanBoard = React.memo(KanbanBoard);
+
+export default MemoizedKanbanBoard;
