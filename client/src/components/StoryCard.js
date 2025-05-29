@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import DraggableCriteriaList from './DraggableCriteriaList';
+import CollapsibleSection from './CollapsibleSection';
 
 /**
  * StoryCard component represents a user story card that can be dragged
@@ -61,15 +62,20 @@ const StoryCard = ({ story, index, onEdit, onCriterionCheck, onCriteriaReorder, 
       )}
       
       {story.criteria && story.criteria.length > 0 && (
-        <>
-          <p className="text-xs font-medium text-slate-500 mb-1 mt-2">Criterios:</p>
-          <DraggableCriteriaList
-            criteria={story.criteria}
-            onCriterionCheck={onCriterionCheck}
-            onCriteriaReorder={onCriteriaReorder}
-            storyId={story._id}
-          />
-        </>
+        <div className="mt-2">
+          <CollapsibleSection 
+            title={`Criterios (${story.criteria.length})`} 
+            defaultCollapsed={false}
+            titleClassName="text-xs font-medium text-slate-500"
+          >
+            <DraggableCriteriaList
+              criteria={story.criteria}
+              onCriterionCheck={onCriterionCheck}
+              onCriteriaReorder={onCriteriaReorder}
+              storyId={story._id}
+            />
+          </CollapsibleSection>
+        </div>
       )}
     </div>
   );

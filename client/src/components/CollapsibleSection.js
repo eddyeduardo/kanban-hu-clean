@@ -11,17 +11,18 @@ import React, { useState } from 'react';
 const CollapsibleSection = ({ title, children, initiallyExpanded = false }) => {
   const [isExpanded, setIsExpanded] = useState(initiallyExpanded);
 
-  const toggleExpand = () => {
+  const toggleExpand = (e) => {
+    e.stopPropagation(); // Detener la propagación del evento
     setIsExpanded(!isExpanded);
   };
 
   return (
-    <div className="border border-slate-200 rounded-lg mb-4">
+    <div className="border border-slate-200 rounded-lg mb-2">
       <div 
         className="flex justify-between items-center p-3 bg-slate-50 rounded-t-lg cursor-pointer"
-        onClick={toggleExpand}
+        onClick={(e) => toggleExpand(e)}
       >
-        <h2 className="text-lg font-medium text-slate-700">{title}</h2>
+        <h2 className="text-xs font-medium text-slate-700">{title}</h2>
         <button className="text-slate-500 hover:text-blue-600">
           {isExpanded ? (
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">

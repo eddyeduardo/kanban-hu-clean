@@ -132,28 +132,8 @@ const ScopeView = ({ columns: propColumns, stories: propStories }) => {
 
   return (
     <div className="scope-view p-4">
-      <div className="flex justify-between items-center mb-6">
+      <div className="mb-6">
         <h2 className="text-xl font-semibold text-slate-700">Alcance del Proyecto</h2>
-        
-        <div className="flex space-x-2">
-          <button 
-            onClick={reloadData} 
-            disabled={loading}
-            className="px-3 py-1.5 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 disabled:opacity-50"
-          >
-            {loading ? 'Cargando...' : 'Recargar datos'}
-          </button>
-          
-          <button 
-            onClick={() => {
-              // Forzar la recarga de la página
-              window.location.reload();
-            }}
-            className="px-3 py-1.5 bg-gray-600 text-white text-sm font-medium rounded-md hover:bg-gray-700"
-          >
-            Reiniciar aplicación
-          </button>
-        </div>
       </div>
       
       {error && (
@@ -162,24 +142,6 @@ const ScopeView = ({ columns: propColumns, stories: propStories }) => {
         </div>
       )}
       
-      {/* Información de depuración - Solo visible durante el desarrollo */}
-      {process.env.NODE_ENV === 'development' && (
-        <div className="bg-gray-100 p-3 mb-4 rounded text-xs">
-          <p><strong>Columnas:</strong> {columns ? columns.length : 0}</p>
-          <p><strong>Historias:</strong> {stories ? stories.length : 0}</p>
-          <p><strong>Columnas filtradas:</strong> {sortedColumns.length}</p>
-          {((!columns || columns.length === 0) || (!stories || stories.length === 0)) && (
-            <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded">
-              <p className="text-yellow-700"><strong>Nota:</strong> No hay suficientes datos para mostrar. Asegúrate de que:</p>
-              <ul className="list-disc pl-5 mt-1 text-yellow-600">
-                <li>Has seleccionado un archivo de proyecto</li>
-                <li>El proyecto contiene columnas e historias</li>
-                <li>Has creado al menos una columna y una historia en el tablero Kanban</li>
-              </ul>
-            </div>
-          )}
-        </div>
-      )}
       
       {/* Mostrar mensaje si no hay columnas */}
       {sortedColumns.length === 0 && (
