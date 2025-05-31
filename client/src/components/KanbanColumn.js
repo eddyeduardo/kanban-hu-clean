@@ -9,13 +9,14 @@ import StoryCard from './StoryCard';
  * @param {Array} props.stories - Stories in this column
  * @param {Function} props.onOpenStoryModal - Function to open story modal
  * @param {Function} props.onCriterionCheck - Function to handle criterion check status change
+ * @param {Function} props.onCriterionDelete - Function to handle criterion deletion
  * @param {Function} props.onCriteriaReorder - Function to handle criteria reordering
  * @param {Function} props.onDrop - Function to handle drop event
  * @param {Function} props.onDragOver - Function to handle drag over event
  * @param {Function} props.onDragStart - Function to handle drag start event
  * @param {Function} props.onDragEnd - Function to handle drag end event
  */
-const KanbanColumn = ({ column, stories, onOpenStoryModal, onCriterionCheck, onCriteriaReorder, onDrop, onDragOver, onDragStart, onDragEnd }) => {
+const KanbanColumn = ({ column, stories, onOpenStoryModal, onCriterionCheck, onCriterionDelete, onCriteriaReorder, onDrop, onDragOver, onDragStart, onDragEnd }) => {
   // Manejar el evento de arrastrar sobre la columna
   const handleDragOver = (e) => {
     e.preventDefault();
@@ -61,6 +62,7 @@ const KanbanColumn = ({ column, stories, onOpenStoryModal, onCriterionCheck, onC
             index={index}
             onEdit={() => onOpenStoryModal(story, column._id)}
             onCriterionCheck={onCriterionCheck}
+            onCriterionDelete={onCriterionDelete}
             onCriteriaReorder={onCriteriaReorder}
             draggable
             onDragStart={e => onDragStart(e, story)}

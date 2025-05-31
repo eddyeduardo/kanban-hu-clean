@@ -7,9 +7,10 @@ import React, { useState } from 'react';
  * @param {Array} props.criteria - List of criteria
  * @param {Function} props.onCriterionCheck - Function to handle criterion check
  * @param {Function} props.onCriteriaReorder - Function to handle criteria reordering
+ * @param {Function} props.onCriterionDelete - Function to handle criterion deletion
  * @param {String} props.storyId - ID of the story
  */
-const DraggableCriteriaList = ({ criteria, onCriterionCheck, onCriteriaReorder, storyId }) => {
+const DraggableCriteriaList = ({ criteria, onCriterionCheck, onCriterionDelete, onCriteriaReorder, storyId }) => {
   const [draggedItemIndex, setDraggedItemIndex] = useState(null);
   
   // Filtrar criterios no seleccionados (solo estos se pueden reordenar)
@@ -80,9 +81,21 @@ const DraggableCriteriaList = ({ criteria, onCriterionCheck, onCriteriaReorder, 
             checked={criterion.checked}
             onChange={(e) => onCriterionCheck(storyId, criteria.indexOf(criterion), e.target.checked)}
           />
-          <span className={`ml-2 ${criterion.isManuallyCreated ? 'text-blue-500 font-medium' : ''}`}>
-            {criterion.text}
-          </span>
+          <div className="flex justify-between items-center w-full">
+            <span className={`ml-2 ${criterion.isManuallyCreated ? 'text-blue-500 font-medium' : ''}`}>
+              {criterion.text}
+            </span>
+            <button 
+              onClick={(e) => {
+                e.stopPropagation();
+                onCriterionDelete(storyId, criteria.indexOf(criterion));
+              }}
+              className="text-gray-400 hover:text-red-500 ml-2 p-1"
+              title="Eliminar criterio"
+            >
+              🗑️
+            </button>
+          </div>
         </li>
       ))}
       

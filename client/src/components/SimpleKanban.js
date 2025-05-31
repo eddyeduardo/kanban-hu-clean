@@ -11,9 +11,10 @@ import api from '../services/api';
  * @param {Function} props.onStoryMove - Función para manejar el movimiento de historias
  * @param {Function} props.onOpenStoryModal - Función para abrir el modal de historia
  * @param {Function} props.onCriterionCheck - Función para manejar el cambio de estado de un criterio
+ * @param {Function} props.onCriterionDelete - Función para manejar la eliminación de un criterio
  * @param {Function} props.onCriteriaReorder - Función para manejar el reordenamiento de criterios
  */
-const SimpleKanban = ({ columns, stories, onStoryMove, onOpenStoryModal, onCriterionCheck, onCriteriaReorder }) => {
+const SimpleKanban = ({ columns, stories, onStoryMove, onOpenStoryModal, onCriterionCheck, onCriterionDelete, onCriteriaReorder }) => {
   const [localStories, setLocalStories] = useState(stories);
   
   // Sincronizar las historias locales cuando cambian las props
@@ -146,6 +147,7 @@ const SimpleKanban = ({ columns, stories, onStoryMove, onOpenStoryModal, onCrite
             stories={columnStories}
             onOpenStoryModal={onOpenStoryModal}
             onCriterionCheck={onCriterionCheck}
+            onCriterionDelete={onCriterionDelete}
             onCriteriaReorder={onCriteriaReorder}
             onDrop={e => handleDrop(e, column._id)}
             onDragOver={handleDragOver}

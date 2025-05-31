@@ -14,7 +14,7 @@ import CollapsibleSection from './CollapsibleSection';
  * @param {Function} props.onDragStart - Function to handle drag start event
  * @param {Function} props.onDragEnd - Function to handle drag end event
  */
-const StoryCard = ({ story, index, onEdit, onCriterionCheck, onCriteriaReorder, onDragStart, onDragEnd }) => {
+const StoryCard = ({ story, index, onEdit, onCriterionCheck, onCriteriaReorder, onCriterionDelete, onDragStart, onDragEnd }) => {
   const draggable = true;
 
   // Manejar el inicio del arrastre
@@ -47,7 +47,14 @@ const StoryCard = ({ story, index, onEdit, onCriterionCheck, onCriteriaReorder, 
       onDragEnd={handleDragEnd}
       onClick={onEdit}
     >
-      <h3 className="font-semibold text-blue-600 mb-1">{story.title || 'Historia sin título'}</h3>
+      <div className="flex justify-between items-start mb-1">
+        <h3 className="font-semibold text-blue-600">{story.title || 'Historia sin título'}</h3>
+        {story.user && (
+          <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+            {story.user}
+          </span>
+        )}
+      </div>
       
       {story.completedAt && (
         <div className="text-xs text-green-600 font-medium mt-1 mb-2">
@@ -72,6 +79,7 @@ const StoryCard = ({ story, index, onEdit, onCriterionCheck, onCriteriaReorder, 
               criteria={story.criteria}
               onCriterionCheck={onCriterionCheck}
               onCriteriaReorder={onCriteriaReorder}
+              onCriterionDelete={onCriterionDelete}
               storyId={story._id}
             />
           </CollapsibleSection>

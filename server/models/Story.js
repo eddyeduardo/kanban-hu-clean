@@ -25,6 +25,10 @@ const CriterionSchema = new mongoose.Schema({
 });
 
 const StorySchema = new mongoose.Schema({
+  user: {
+    type: String,
+    trim: true
+  },
   title: {
     type: String,
     required: true,

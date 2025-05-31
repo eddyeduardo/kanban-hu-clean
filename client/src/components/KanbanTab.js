@@ -12,6 +12,7 @@ import SimpleKanban from './SimpleKanban';
  * @param {Function} props.onStoryMove - Function to handle moving stories
  * @param {Function} props.onOpenStoryModal - Function to handle opening the story modal
  * @param {Function} props.onCriterionCheck - Function to handle criterion check
+ * @param {Function} props.onCriterionDelete - Function to handle criterion deletion
  * @param {Function} props.onCriteriaReorder - Function to handle criteria reordering
  * @param {String} props.currentJsonFile - Current JSON file name
  */
@@ -22,6 +23,7 @@ const KanbanTab = ({
   onStoryMove, 
   onOpenStoryModal, 
   onCriterionCheck,
+  onCriterionDelete,
   onCriteriaReorder,
   currentJsonFile 
 }) => {
@@ -46,6 +48,7 @@ const KanbanTab = ({
         onStoryMove={onStoryMove}
         onOpenStoryModal={onOpenStoryModal}
         onCriterionCheck={onCriterionCheck}
+        onCriterionDelete={onCriterionDelete}
         onCriteriaReorder={onCriteriaReorder}
       />
       

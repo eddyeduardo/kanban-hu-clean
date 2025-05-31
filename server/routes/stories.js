@@ -275,13 +275,25 @@ router.post('/import', async (req, res) => {
           completedAt: null
         }));
         
+        // Debug log para verificar los datos de la historia
+        console.log('Story data:', {
+          titulo: storyData.titulo,
+          usuario: storyData.usuario,
+          requerimiento: storyData.requerimiento,
+          hasCriterios: storyData.criterios_de_aceptacion ? storyData.criterios_de_aceptacion.length : 0
+        });
+
+        // Usar 'titulo' o 'requerimiento' como título, con 'Sin título' como valor por defecto
+        const titulo = storyData.titulo || storyData.requerimiento || 'Sin título';
+        
         const story = new Story({
           _id: storyId,
-          title: storyData.titulo || 'Sin título',
+          title: titulo,
+          user: storyData.usuario,
           criteria: criteria,
           column: todoColumn._id,
           position: currentPosition,
-          jsonFileName: jsonFileName // Guardar el nombre del archivo JSON
+          jsonFileName: jsonFileName
         });
         
         try {

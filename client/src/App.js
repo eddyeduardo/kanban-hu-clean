@@ -357,7 +357,32 @@ function App() {
       setError('Error reordenando criterios: ' + (err.response?.data?.message || err.message));
     }
   };
-  
+
+  // Handler for deleting a criterion
+  const handleCriterionDelete = async (storyId, criterionIndex) => {
+    try {
+      const story = stories.find(s => s._id === storyId);
+      if (!story) return;
+
+      // Crear una copia de los criterios sin el que se va a eliminar
+      const updatedCriteria = [...story.criteria];
+      updatedCriteria.splice(criterionIndex, 1);
+      
+      // Actualizar la historia en el servidor
+      await api.updateStory(storyId, { criteria: updatedCriteria });
+      
+      // Actualizar el estado local
+      setStories(stories.map(s => {
+        if (s._id === storyId) {
+          return { ...s, criteria: updatedCriteria };
+        }
+        return s;
+      }));
+    } catch (err) {
+      setError('Error eliminando criterio: ' + (err.response?.data?.message || err.message));
+    }
+  };
+
   // Handler for updating a criterion's checked status
   const handleCriterionCheck = async (storyId, criterionIndex, checked) => {
     try {
@@ -453,12 +478,12 @@ function App() {
             tabs={{
               'Kanban': (
                 <KanbanTab
-                  columns={columns}
-                  stories={stories}
-                  onAddColumn={handleAddColumn}
+                  columns={columns} 
+                  stories={stories} 
                   onStoryMove={handleStoryMove}
                   onOpenStoryModal={openStoryModal}
                   onCriterionCheck={handleCriterionCheck}
+                  onCriterionDelete={handleCriterionDelete}
                   onCriteriaReorder={handleCriteriaReorder}
                   currentJsonFile={currentJsonFile}
                 />
