@@ -56,20 +56,46 @@ const StoryCard = ({
     <div 
       className={`bg-white rounded-lg shadow p-4 mb-3 border-l-4 ${
         story.completedAt ? 'border-green-500' : 'border-blue-500'
-      }`}
+      } cursor-grab active:cursor-grabbing`}
       draggable={true}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
       onClick={toggleExpand}
+      title="Arrastrar para mover"
     >
       <div className="flex justify-between items-start mb-1">
-        <h3 className="font-semibold text-blue-600">{story.title || 'Historia sin título'}</h3>
-        <span 
-          className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full font-mono" 
-          title={story.id_historia || story._id}
+        <h3 className="font-semibold text-blue-600 flex-grow pr-2">
+          {story.title || 'Historia sin título'}
+        </h3>
+        <div 
+          className="flex-shrink-0 group relative"
+          title={`ID: ${story.id_historia || story._id || 'N/A'}`}
         >
-          {story.id_historia || story._id?.substring(0, 6) || 'N/A'}
-        </span>
+          <span className="
+            text-xs 
+            bg-blue-50 
+            hover:bg-blue-100 
+            text-blue-700 
+            px-2 py-1 
+            rounded 
+            font-mono 
+            border border-blue-200 
+            transition-colors 
+            duration-200
+            flex items-center
+            cursor-help
+          ">
+            {story.id_historia || story._id?.substring(0, 8) || 'N/A'}
+            {story.id_historia && (
+              <span className="ml-1 text-blue-400 group-hover:text-blue-600">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
+                  <path d="M8 2a1 1 0 000 2h2a1 1 0 100-2H8z" />
+                  <path d="M3 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v6h-4.586l1.293-1.293a1 1 0 00-1.414-1.414l-3 3a1 1 0 000 1.414l3 3a1 1 0 001.414-1.414L10.414 13H15v3a2 2 0 01-2 2H5a2 2 0 01-2-2V5zM15 11h2a1 1 0 100-2h-2v2z" />
+                </svg>
+              </span>
+            )}
+          </span>
+        </div>
       </div>
       
       {story.completedAt && (
@@ -98,7 +124,7 @@ const StoryCard = ({
             ) : (
               <FiChevronDown className="mr-1" />
             )}
-            <span>Criterios de aceptación ({completedCriteria}/{totalCriteria})</span>
+            <span>Criterios de aceptación</span>
           </div>
           
           {isCriteriaExpanded && (
