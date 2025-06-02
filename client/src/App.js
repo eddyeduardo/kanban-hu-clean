@@ -40,6 +40,32 @@ function App() {
     }
   };
   
+  // Función para manejar la adición de una nueva columna
+  const handleAddColumn = async (columnName) => {
+    try {
+      setLoading(true);
+      
+      // Si hay un archivo JSON actual, la columna se asocia a ese proyecto
+      const newColumn = {
+        name: columnName,
+        jsonFileName: currentJsonFile || null
+      };
+      
+      const response = await api.createColumn(newColumn);
+      
+      // Actualizar la lista de columnas
+      setColumns(prevColumns => [...prevColumns, response.data]);
+      
+      return response.data;
+    } catch (error) {
+      console.error('Error al crear la columna:', error);
+      setError('Error al crear la columna: ' + (error.response?.data?.message || error.message));
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Función para actualizar la fecha de fin del Burn Down Chart
   const handleEndDateChange = async (date) => {
     setChartEndDate(date);
@@ -101,39 +127,41 @@ function App() {
     fetchData();
   }, [currentJsonFile]);
 
-  // Handler for adding a new column
-  const handleAddColumn = async (name) => {
-    try {
-      setLoading(true);
-      
-      // Si hay un archivo JSON seleccionado, asociar la columna a ese archivo
-      const columnData = { name };
-      
-      if (currentJsonFile) {
-        columnData.jsonFileName = currentJsonFile;
-        columnData.isDefault = false;
-      } else {
-        // Si no hay archivo JSON seleccionado, crear una columna por defecto
-        columnData.isDefault = true;
-      }
-      
-      const response = await api.createColumn(columnData);
-      setColumns([...columns, response.data]);
-      setLoading(false);
-    } catch (err) {
-      setError('Error adding column: ' + (err.response?.data?.message || err.message));
-      setLoading(false);
-    }
-  };
+
 
   // Handler for importing stories from JSON
   const handleImportJSON = async (data) => {
     try {
       setLoading(true);
+      
+      // Verificar si ya existe un proyecto con el mismo nombre
+      const jsonFileName = data.jsonFileName;
+      const existingProject = jsonFiles.find(file => file.fileName === jsonFileName);
+      
+      if (existingProject) {
+        // Si el proyecto ya existe, simplemente cargamos sus datos
+        setCurrentJsonFile(jsonFileName);
+        
+        // Cargar las columnas específicas de este archivo JSON
+        const columnsResponse = await api.getColumns(jsonFileName);
+        setColumns(columnsResponse.data);
+        
+        // Cargar las historias asociadas a este archivo JSON
+        const storiesResponse = await api.getStoriesByJsonFile(jsonFileName);
+        setStories(storiesResponse.data.stories);
+        
+        // Mostrar mensaje al usuario
+        setError('El proyecto ya existe. Se han cargado los datos existentes.');
+        setTimeout(() => setError(''), 5000); // Limpiar el mensaje después de 5 segundos
+        return;
+      }
+      
+      // Si no existe, procedemos con la importación normal
       const response = await api.importStories(data);
       
-      // Obtener el nombre del archivo JSON
-      const jsonFileName = data.jsonFileName;
+      // Actualizar la lista de archivos JSON
+      const jsonFilesResponse = await api.getJsonFiles();
+      setJsonFiles(jsonFilesResponse.data);
       
       // Guardar el nombre del archivo actual en el estado
       setCurrentJsonFile(jsonFileName);
@@ -480,6 +508,7 @@ function App() {
                 <KanbanTab
                   columns={columns} 
                   stories={stories} 
+                  onAddColumn={handleAddColumn}
                   onStoryMove={handleStoryMove}
                   onOpenStoryModal={openStoryModal}
                   onCriterionCheck={handleCriterionCheck}

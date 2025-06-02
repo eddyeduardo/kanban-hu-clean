@@ -288,6 +288,7 @@ router.post('/import', async (req, res) => {
         
         const story = new Story({
           _id: storyId,
+          id_historia: storyData.id_historia || null,
           title: titulo,
           user: storyData.usuario,
           criteria: criteria,

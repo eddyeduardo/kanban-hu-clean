@@ -25,6 +25,11 @@ const CriterionSchema = new mongoose.Schema({
 });
 
 const StorySchema = new mongoose.Schema({
+  id_historia: {
+    type: String,
+    trim: true,
+    index: true
+  },
   user: {
     type: String,
     trim: true

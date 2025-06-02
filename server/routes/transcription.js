@@ -206,7 +206,29 @@ async function generarTranscripcion(audioPath) {
             response_format: 'srt',
             language: 'es'
           });
-          transcriptions.push(transcription);
+          
+          // Convertir la respuesta SRT a formato VTT y extraer texto plano
+          let vttContent = 'WEBVTT\n\n';
+          let txtContent = '';
+          const segments = transcription.split('\n\n').filter(s => s.trim());
+          
+          for (const segment of segments) {
+            const lines = segment.split('\n');
+            if (lines.length >= 3) {
+              const times = lines[1].replace(/,/g, '.');
+              const text = lines.slice(2).join(' ').trim();
+              
+              if (times && text) {
+                vttContent += `${times}\n${text}\n\n`;
+                txtContent += `${text}\n`;
+              }
+            }
+          }
+          
+          transcriptions.push({
+            vtt: vttContent.trim(),
+            text: txtContent.trim()
+          });
         } catch (error) {
           console.error(`Error procesando segmento ${index + 1}:`, error.message);
           throw new Error(`Error en segmento ${index + 1}: ${error.message}`);
@@ -217,9 +239,17 @@ async function generarTranscripcion(audioPath) {
       }
       
       // Combinar las transcripciones
+      const combinedVtt = 'WEBVTT\n\n' + transcriptions.map(t => t.vtt).join('\n\n');
+      const combinedTxt = transcriptions.map(t => t.text).join('\n\n');
+      
+      // Verificar que tenemos contenido
+      if (!combinedTxt.trim()) {
+        throw new Error('No se pudo extraer texto de la transcripción de los segmentos');
+      }
+      
       return {
-        vtt: transcriptions.map(t => t.vtt).join('\n\n'),
-        txt: transcriptions.map(t => t.text).join('\n\n')
+        vtt: combinedVtt,
+        txt: combinedTxt
       };
     }
     
