@@ -133,35 +133,10 @@ function App() {
   const handleImportJSON = async (data) => {
     try {
       setLoading(true);
-      
-      // Verificar si ya existe un proyecto con el mismo nombre
-      const jsonFileName = data.jsonFileName;
-      const existingProject = jsonFiles.find(file => file.fileName === jsonFileName);
-      
-      if (existingProject) {
-        // Si el proyecto ya existe, simplemente cargamos sus datos
-        setCurrentJsonFile(jsonFileName);
-        
-        // Cargar las columnas específicas de este archivo JSON
-        const columnsResponse = await api.getColumns(jsonFileName);
-        setColumns(columnsResponse.data);
-        
-        // Cargar las historias asociadas a este archivo JSON
-        const storiesResponse = await api.getStoriesByJsonFile(jsonFileName);
-        setStories(storiesResponse.data.stories);
-        
-        // Mostrar mensaje al usuario
-        setError('El proyecto ya existe. Se han cargado los datos existentes.');
-        setTimeout(() => setError(''), 5000); // Limpiar el mensaje después de 5 segundos
-        return;
-      }
-      
-      // Si no existe, procedemos con la importación normal
       const response = await api.importStories(data);
       
-      // Actualizar la lista de archivos JSON
-      const jsonFilesResponse = await api.getJsonFiles();
-      setJsonFiles(jsonFilesResponse.data);
+      // Obtener el nombre del archivo JSON
+      const jsonFileName = data.jsonFileName;
       
       // Guardar el nombre del archivo actual en el estado
       setCurrentJsonFile(jsonFileName);

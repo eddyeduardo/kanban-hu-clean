@@ -3,7 +3,7 @@ import KanbanColumn from './KanbanColumn';
 import api from '../services/api';
 
 /**
- * SimpleKanban - Un componente Kanban simple que implementa arrastrar y soltar sin usar react-beautiful-dnd
+ * SimpleKanban - Un componente Kanban simple que implementa arrastrar y soltar
  * 
  * @param {Object} props - Propiedades del componente
  * @param {Array} props.columns - Lista de columnas
@@ -16,6 +16,7 @@ import api from '../services/api';
  */
 const SimpleKanban = ({ columns, stories, onStoryMove, onOpenStoryModal, onCriterionCheck, onCriterionDelete, onCriteriaReorder }) => {
   const [localStories, setLocalStories] = useState(stories);
+  const [draggedStory, setDraggedStory] = useState(null);
   
   // Sincronizar las historias locales cuando cambian las props
   useEffect(() => {
@@ -37,7 +38,6 @@ const SimpleKanban = ({ columns, stories, onStoryMove, onOpenStoryModal, onCrite
     // Si story.column es un ObjectId de MongoDB (como string)
     return story.column === columnId || story.column === columnId.toString();
   };
-  const [draggedStory, setDraggedStory] = useState(null);
 
   // Filtrar historias por columna
   const getStoriesForColumn = (columnId) => {
@@ -47,13 +47,12 @@ const SimpleKanban = ({ columns, stories, onStoryMove, onOpenStoryModal, onCrite
       .filter(story => storyBelongsToColumn(story, columnId))
       .sort((a, b) => (a.position || 0) - (b.position || 0));
   };
-
+  
   // Iniciar arrastre
   const handleDragStart = (e, story) => {
     e.stopPropagation();
     setDraggedStory(story);
     e.dataTransfer.effectAllowed = 'move';
-    // Necesario para Firefox
     e.dataTransfer.setData('text/plain', story._id);
     // Añadir clase de estilo para el elemento arrastrado
     e.target.classList.add('dragging');
@@ -103,7 +102,6 @@ const SimpleKanban = ({ columns, stories, onStoryMove, onOpenStoryModal, onCrite
           const updatedStory = { 
             ...story, 
             column: columnId,
-            // Asegurarse de que column es un objeto con _id para la comparación
             column: { _id: columnId } 
           };
           console.log('Historia actualizada:', updatedStory);
@@ -119,7 +117,7 @@ const SimpleKanban = ({ columns, stories, onStoryMove, onOpenStoryModal, onCrite
         const columnStories = getStoriesForColumn(columnId);
         const newPosition = columnStories.length;
         console.log(`Llamando a onStoryMove con posición ${newPosition}`);
-        onStoryMove(draggedStory._id, columnId, newPosition);
+        await onStoryMove(draggedStory._id, columnId, newPosition);
       }
     } catch (error) {
       console.error('Error al mover la historia:', error);
@@ -130,7 +128,9 @@ const SimpleKanban = ({ columns, stories, onStoryMove, onOpenStoryModal, onCrite
 
   // Terminar arrastre
   const handleDragEnd = (e) => {
-    e.target.classList.remove('dragging');
+    if (e.target) {
+      e.target.classList.remove('dragging');
+    }
     setDraggedStory(null);
   };
 
@@ -139,7 +139,6 @@ const SimpleKanban = ({ columns, stories, onStoryMove, onOpenStoryModal, onCrite
       {columns.map(column => {
         const columnStories = getStoriesForColumn(column._id);
         
-        // Usar el componente KanbanColumn
         return (
           <KanbanColumn
             key={column._id}
@@ -149,7 +148,7 @@ const SimpleKanban = ({ columns, stories, onStoryMove, onOpenStoryModal, onCrite
             onCriterionCheck={onCriterionCheck}
             onCriterionDelete={onCriterionDelete}
             onCriteriaReorder={onCriteriaReorder}
-            onDrop={e => handleDrop(e, column._id)}
+            onDrop={(e) => handleDrop(e, column._id)}
             onDragOver={handleDragOver}
             onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}

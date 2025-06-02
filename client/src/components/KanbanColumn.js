@@ -13,30 +13,34 @@ import StoryCard from './StoryCard';
  * @param {Function} props.onCriteriaReorder - Function to handle criteria reordering
  * @param {Function} props.onDrop - Function to handle drop event
  * @param {Function} props.onDragOver - Function to handle drag over event
- * @param {Function} props.onDragStart - Function to handle drag start event
- * @param {Function} props.onDragEnd - Function to handle drag end event
+ * @param {Function} props.onDragStart - Function to handle drag start
+ * @param {Function} props.onDragEnd - Function to handle drag end
  */
-const KanbanColumn = ({ column, stories, onOpenStoryModal, onCriterionCheck, onCriterionDelete, onCriteriaReorder, onDrop, onDragOver, onDragStart, onDragEnd }) => {
-  // Manejar el evento de arrastrar sobre la columna
+const KanbanColumn = ({ 
+  column, 
+  stories, 
+  onOpenStoryModal, 
+  onCriterionCheck, 
+  onCriterionDelete, 
+  onCriteriaReorder,
+  onDrop,
+  onDragOver,
+  onDragStart,
+  onDragEnd
+}) => {
+  const handleDrop = (e) => {
+    e.preventDefault();
+    if (onDrop) onDrop(e, column._id);
+  };
+
   const handleDragOver = (e) => {
     e.preventDefault();
-    e.stopPropagation();
-    e.dataTransfer.dropEffect = 'move';
-    // Llamar al manejador proporcionado si existe
     if (onDragOver) onDragOver(e);
   };
 
-  // Manejar el evento de soltar en la columna
-  const handleDrop = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    // Llamar al manejador proporcionado si existe
-    if (onDrop) onDrop(e);
-  };
-
   return (
-    <div
-      className="kanban-column bg-slate-200 p-3 rounded-lg shadow flex-shrink-0"
+    <div 
+      className="kanban-column bg-slate-200 p-3 rounded-lg shadow flex-shrink-0" 
       style={{ width: '300px', marginRight: '1.5rem' }}
       onDrop={handleDrop}
       onDragOver={handleDragOver}
@@ -54,18 +58,17 @@ const KanbanColumn = ({ column, stories, onOpenStoryModal, onCriterionCheck, onC
         </button>
       </div>
       
-      <div className="kanban-column-content space-y-3">
+      <div className="kanban-column-content space-y-3 min-h-[50px]">
         {stories.map((story, index) => (
           <StoryCard 
-            key={story._id} 
-            story={story} 
+            key={story._id}
+            story={story}
             index={index}
             onEdit={() => onOpenStoryModal(story, column._id)}
             onCriterionCheck={onCriterionCheck}
             onCriterionDelete={onCriterionDelete}
             onCriteriaReorder={onCriteriaReorder}
-            draggable
-            onDragStart={e => onDragStart(e, story)}
+            onDragStart={onDragStart}
             onDragEnd={onDragEnd}
           />
         ))}
