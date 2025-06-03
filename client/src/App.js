@@ -301,22 +301,42 @@ function App() {
   // Handler for saving a story
   const handleSaveStory = async (storyData) => {
     try {
-      // Si hay criterios nuevos, marcarlos como creados manualmente
+      console.log('Guardando historia:', { storyData, currentStory });
+      
+      // Procesar los criterios
       if (storyData.criteria && storyData.criteria.length > 0) {
-        // Si es una historia existente, solo marcar los criterios nuevos
         if (currentStory && currentStory.criteria) {
-          const existingCriteriaTexts = currentStory.criteria.map(c => c.text);
-          storyData.criteria = storyData.criteria.map(criterion => {
-            // Si el criterio no existía antes, marcarlo como creado manualmente
-            if (!existingCriteriaTexts.includes(criterion.text)) {
-              return { ...criterion, isManuallyCreated: true };
+          // Para historias existentes, mapear los criterios para mantener los IDs existentes
+          const updatedCriteria = storyData.criteria.map(newCriterion => {
+            // Buscar si existe un criterio con el mismo texto en la historia actual
+            const existingCriterion = currentStory.criteria.find(
+              c => c.text === newCriterion.text
+            );
+            
+            if (existingCriterion) {
+              // Mantener el criterio existente con su _id y estado actual
+              return {
+                _id: existingCriterion._id,
+                text: newCriterion.text,
+                checked: existingCriterion.checked,
+                isManuallyCreated: existingCriterion.isManuallyCreated || false
+              };
+            } else {
+              // Es un nuevo criterio
+              return {
+                text: newCriterion.text,
+                checked: newCriterion.checked || false,
+                isManuallyCreated: true  // Marcar como creado manualmente
+              };
             }
-            return criterion;
           });
+          
+          storyData.criteria = updatedCriteria;
         } else {
-          // Si es una historia nueva, marcar todos los criterios como creados manualmente
+          // Para historias nuevas, marcar todos los criterios como creados manualmente
           storyData.criteria = storyData.criteria.map(criterion => ({
-            ...criterion,
+            text: criterion.text,
+            checked: criterion.checked || false,
             isManuallyCreated: true
           }));
         }

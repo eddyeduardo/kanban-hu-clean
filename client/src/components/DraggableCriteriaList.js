@@ -72,7 +72,7 @@ const DraggableCriteriaList = ({ criteria, onCriterionCheck, onCriterionDelete, 
           onDragOver={(e) => handleDragOver(e, idx)}
           onDrop={(e) => handleDrop(e, idx)}
           onDragEnd={handleDragEnd}
-          className={`cursor-move py-1 hover:bg-slate-50 rounded ${criterion.isManuallyCreated ? 'bg-green-100' : ''}`}
+          className={`cursor-move py-1 hover:bg-slate-50 rounded ${criterion.isManuallyCreated ? 'bg-green-50' : ''}`}
           onClick={(e) => e.stopPropagation()}
         >
           <input
@@ -82,7 +82,7 @@ const DraggableCriteriaList = ({ criteria, onCriterionCheck, onCriterionDelete, 
             onChange={(e) => onCriterionCheck(storyId, criteria.indexOf(criterion), e.target.checked)}
           />
           <div className="flex justify-between items-center w-full">
-            <span className={`ml-2 ${criterion.isManuallyCreated ? 'text-blue-500 font-medium' : ''}`}>
+            <span className={`ml-2 ${criterion.isManuallyCreated ? 'text-blue-600 font-medium' : ''}`}>
               {criterion.text}
             </span>
             <button 
@@ -103,7 +103,7 @@ const DraggableCriteriaList = ({ criteria, onCriterionCheck, onCriterionDelete, 
       {checkedCriteria.map((criterion, idx) => (
         <li 
           key={`checked-${idx}`} 
-          className={`py-1 ${criterion.isManuallyCreated ? 'bg-green-100 rounded' : ''}`}
+          className={`py-1 ${criterion.isManuallyCreated ? 'bg-green-50 rounded' : ''}`}
           onClick={(e) => e.stopPropagation()}
         >
           <input
@@ -116,7 +116,7 @@ const DraggableCriteriaList = ({ criteria, onCriterionCheck, onCriterionDelete, 
           <label 
             htmlFor={`${storyId}-criterion-${criteria.indexOf(criterion)}`}
             className={`text-content ml-1.5 flex-grow line-through text-slate-400 ${
-              criterion.isManuallyCreated ? 'text-blue-500 font-medium' : ''
+              criterion.isManuallyCreated ? 'text-blue-600 font-medium' : ''
             }`}
           >
             {criterion.text}

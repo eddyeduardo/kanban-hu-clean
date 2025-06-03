@@ -25,6 +25,10 @@ const StoryCard = ({
   onDragEnd,
   index
 }) => {
+  // Efecto para mostrar los datos de la historia en la consola
+  useEffect(() => {
+    console.log('Datos de la historia:', story);
+  }, [story]);
   const [isExpanded, setIsExpanded] = useState(false);
   const [isCriteriaExpanded, setIsCriteriaExpanded] = useState(false);
   const [completedCriteria, setCompletedCriteria] = useState(0);
@@ -63,10 +67,22 @@ const StoryCard = ({
       onClick={toggleExpand}
       title="Arrastrar para mover"
     >
-      <div className="flex justify-between items-start mb-1">
-        <h3 className="font-semibold text-blue-600 flex-grow pr-2">
-          {story.title || 'Historia sin título'}
-        </h3>
+      <div className="flex justify-between items-start mb-2">
+        <div className="flex-grow pr-2">
+          <h3 className="font-semibold text-blue-600">
+            {story.title || 'Historia sin título'}
+          </h3>
+          {story.user && (
+            <div className="flex items-center mt-1">
+              <span className="inline-flex items-center bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs px-2 py-0.5 rounded-full border border-blue-200 transition-colors duration-200">
+                <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+                {story.user}
+              </span>
+            </div>
+          )}
+        </div>
         <div 
           className="flex-shrink-0 group relative"
           title={`ID: ${story.id_historia || story._id || 'N/A'}`}
