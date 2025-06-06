@@ -181,7 +181,125 @@ const Dashboard = ({ stories, columns, currentJsonFile, startDate, endDate }) =>
   }, [stories]);
   
   // Colores para las barras
-  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
+  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEEAD'];
+  
+  // Calcular métricas por proyecto (agrupando por el identificador de cliente)
+  const projectMetrics = useMemo(() => {
+    console.log('=== DEBUG: Iniciando cálculo de métricas por proyecto ===');
+    console.log('Total de historias recibidas:', stories.length);
+    
+    // Verificar la estructura de las historias
+    if (stories.length > 0) {
+      console.log('=== DEBUG: Estructura de las historias ===');
+      console.log('Campos de la primera historia:', Object.keys(stories[0]));
+      console.log('Primeras 5 historias:', stories.slice(0, 5).map(s => ({
+        id: s.id,
+        id_historia: s.id_historia,
+        title: s.title,
+        user: s.user,
+        completada: !!s.completedAt,
+        criterios: s.criteria ? s.criteria.length : 0,
+        jsonFileName: s.jsonFileName
+      })));
+      
+      // Buscar historias con id_historia
+      const historiasConId = stories.filter(s => s.id_historia);
+      console.log(`Historias con id_historia: ${historiasConId.length}/${stories.length}`);
+      
+      if (historiasConId.length > 0) {
+        console.log('Ejemplos de id_historia:', historiasConId.slice(0, 3).map(s => s.id_historia));
+      } else {
+        console.log('Ninguna historia tiene id_historia definido, usando jsonFileName como agrupador');
+      }
+    }
+    
+    const projectMap = new Map();
+    
+    stories.forEach(story => {
+      // Intentar extraer el identificador de cliente del ID de historia (formato: HU-NNN-XXX)
+      let clientId = 'Sin proyecto';
+      
+      // 1. Intentar extraer de id_historia si existe
+      if (story.id_historia) {
+        // Formato: HU-XXXX-XXX donde XXXX es el código del cliente
+        const match = story.id_historia.match(/^HU-([A-Za-z]+)-/);
+        if (match && match[1]) {
+          clientId = match[1]; // Usar directamente el código del cliente (ej: 'CHIL')
+        }
+      } 
+      // 2. Si no hay id_historia, usar el jsonFileName
+      else if (story.jsonFileName) {
+        clientId = story.jsonFileName.replace('.json', '');
+      } 
+      // 3. Si no hay ninguno, agrupar como 'Sin proyecto'
+      else {
+        clientId = 'Sin proyecto';
+      }
+      
+      if (!projectMap.has(clientId)) {
+        projectMap.set(clientId, {
+          name: clientId,
+          totalStories: 0,
+          completedStories: 0,
+          pendingStories: 0,
+          totalCriteria: 0,
+          completedCriteria: 0,
+          totalPoints: 0,
+          completedPoints: 0,
+          stories: [] // Almacenar IDs de historias para referencia
+        });
+      }
+      
+      const projectData = projectMap.get(clientId);
+      projectData.totalStories++;
+      
+      // Agregar ID de la historia a la lista (si no existe)
+      if (story.id_historia && !projectData.stories.includes(story.id_historia)) {
+        projectData.stories.push(story.id_historia);
+      }
+      
+      // Calcular puntos de la historia (usando story.points o 1 por defecto)
+      const storyPoints = typeof story.points === 'number' ? story.points : 1;
+      projectData.totalPoints += storyPoints;
+      
+      if (story.completedAt) {
+        projectData.completedStories++;
+        projectData.completedPoints += storyPoints;
+      } else {
+        projectData.pendingStories++;
+      }
+      
+      // Contar criterios
+      if (Array.isArray(story.criteria)) {
+        story.criteria.forEach(criterion => {
+          projectData.totalCriteria++;
+          if (criterion.checked) {
+            projectData.completedCriteria++;
+          }
+        });
+      }
+    });
+    
+    // Calcular porcentajes y agregar información adicional
+    return Array.from(projectMap.entries())
+      .map(([name, data]) => ({
+        ...data,
+        name,
+        completionRate: data.totalStories > 0 
+          ? Math.round((data.completedStories / data.totalStories) * 100) 
+          : 0,
+        criteriaCompletionRate: data.totalCriteria > 0
+          ? Math.round((data.completedCriteria / data.totalCriteria) * 100)
+          : 0,
+        pointsCompletionRate: data.totalPoints > 0
+          ? Math.round((data.completedPoints / data.totalPoints) * 100)
+          : 0,
+        storyCount: data.totalStories,
+        completedStoryCount: data.completedStories,
+        storyIds: data.stories.join(', ')
+      }))
+      .sort((a, b) => b.completedPoints - a.completedPoints); // Ordenar por puntos completados
+  }, [stories]);
 
   // Preparar datos para los gráficos de Burn Down Chart por columna
   const burnDownDataByColumn = useMemo(() => {
@@ -454,6 +572,137 @@ const Dashboard = ({ stories, columns, currentJsonFile, startDate, endDate }) =>
         </div>
       </div>
       
+      {/* Métricas por Proyecto */}
+      <div className="bg-white p-4 rounded-lg shadow-sm mb-6">
+        <h3 className="text-lg font-semibold text-slate-700 mb-4 flex items-center">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+            <path fillRule="evenodd" d="M4 4a2 2 0 012-2h8a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm3 1a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clipRule="evenodd" />
+          </svg>
+          Progreso por Proyecto
+        </h3>
+        
+        {projectMetrics.length > 0 ? (
+          <div className="space-y-6">
+            {/* Gráfico de barras */}
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={projectMetrics}
+                  layout="vertical"
+                  margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis type="number" domain={[0, 100]} />
+                  <YAxis 
+                    dataKey="name" 
+                    type="category" 
+                    width={200}
+                    tick={{ fontSize: 12 }}
+                    interval={0}
+                  />
+                  <Tooltip 
+                    formatter={(value, name) => {
+                      if (name === 'completionRate') return [`${value}%`, 'Historias Completadas'];
+                      if (name === 'criteriaCompletionRate') return [`${value}%`, 'Criterios Completados'];
+                      if (name === 'pointsCompletionRate') return [`${value}%`, 'Puntos Completados'];
+                      return [value, name];
+                    }}
+                    labelFormatter={(name) => `Proyecto: ${name}`}
+                  />
+                  <Legend />
+                  <Bar dataKey="pointsCompletionRate" name="Puntos Completados" fill="#8884d8">
+                    {projectMetrics.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+            
+            {/* Tabla detallada */}
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-slate-200">
+                <thead className="bg-slate-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Proyecto</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Historias</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Puntos</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Progreso</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Criterios</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-slate-200">
+                  {projectMetrics.map((project, index) => (
+                    <tr key={project.name}>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <div className="flex-shrink-0 h-3 w-3 rounded-full" style={{ backgroundColor: COLORS[index % COLORS.length] }}></div>
+                          <div className="ml-4">
+                            <div className="text-sm font-medium text-slate-900">
+                              {project.name}
+                            </div>
+                            <div className="text-sm text-slate-500">
+                              {project.completedPoints} / {project.totalPoints} pts
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-slate-900">
+                          {project.completedStories} / {project.totalStories}
+                        </div>
+                        <div className="w-full bg-slate-200 rounded-full h-2.5 mt-1">
+                          <div 
+                            className="bg-blue-600 h-2.5 rounded-full" 
+                            style={{ width: `${project.completionRate}%` }}
+                          ></div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-slate-900">
+                          {project.completedPoints} / {project.totalPoints}
+                        </div>
+                        <div className="w-full bg-slate-200 rounded-full h-2.5 mt-1">
+                          <div 
+                            className="bg-green-500 h-2.5 rounded-full" 
+                            style={{ width: `${project.pointsCompletionRate}%` }}
+                          ></div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-slate-900">
+                          {project.completionRate}%
+                        </div>
+                        <div className="w-full bg-slate-200 rounded-full h-2.5 mt-1">
+                          <div 
+                            className="bg-yellow-500 h-2.5 rounded-full" 
+                            style={{ width: `${project.completionRate}%` }}
+                          ></div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-slate-900">
+                          {project.completedCriteria} / {project.totalCriteria}
+                        </div>
+                        <div className="w-full bg-slate-200 rounded-full h-2.5 mt-1">
+                          <div 
+                            className="bg-purple-500 h-2.5 rounded-full" 
+                            style={{ width: `${project.criteriaCompletionRate}%` }}
+                          ></div>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ) : (
+          <p className="text-sm text-slate-500">No hay datos de proyectos disponibles.</p>
+        )}
+      </div>
+
+
       {/* Métricas por Usuario */}
       <div className="bg-white p-4 rounded-lg shadow-sm mb-6">
         <h3 className="text-lg font-semibold text-slate-700 mb-4 flex items-center">
