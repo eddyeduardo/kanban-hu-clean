@@ -3,7 +3,8 @@ import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, 
   ResponsiveContainer, AreaChart, Area, BarChart, Bar, Cell 
 } from 'recharts';
-import { User, CheckCircle } from 'react-feather';
+import { User, CheckCircle, Download } from 'react-feather';
+import * as XLSX from 'xlsx';
 
 // Tooltip personalizado para los gráficos Burn Down
 const CustomTooltip = ({ active, payload, label }) => {
@@ -590,12 +591,38 @@ const Dashboard = ({ stories, columns, currentJsonFile, startDate, endDate }) =>
       
       {/* Métricas por Proyecto */}
       <div className="bg-white p-4 rounded-lg shadow-sm mb-6">
-        <h3 className="text-lg font-semibold text-slate-700 mb-4 flex items-center">
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-            <path fillRule="evenodd" d="M4 4a2 2 0 012-2h8a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm3 1a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clipRule="evenodd" />
-          </svg>
-          Progreso por Proyecto
-        </h3>
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-lg font-semibold text-slate-700">Progreso por Proyecto</h3>
+          <button
+            onClick={() => {
+              // Crear datos para exportar
+              const data = projectMetrics.map(project => ({
+                'Proyecto': project.name,
+                'Historias Completadas': project.completedStories,
+                'Historias Totales': project.totalStories,
+                '% Completado': `${project.completionRate}%`,
+                'Puntos Completados': project.completedPoints,
+                'Puntos Totales': project.totalPoints,
+                '% Puntos Completados': `${project.pointsCompletionRate}%`,
+                'Criterios Completados': project.completedCriteria,
+                'Criterios Totales': project.totalCriteria,
+                '% Criterios Completados': `${project.criteriaCompletionRate}%`
+              }));
+              
+              // Crear hoja de trabajo
+              const ws = XLSX.utils.json_to_sheet(data);
+              const wb = XLSX.utils.book_new();
+              XLSX.utils.book_append_sheet(wb, ws, 'Proyectos');
+              
+              // Exportar archivo
+              XLSX.writeFile(wb, 'progreso_proyectos.xlsx');
+            }}
+            className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+          >
+            <Download className="h-3 w-3 mr-1" />
+            Exportar a Excel
+          </button>
+        </div>
         
         {projectMetrics.length > 0 ? (
           <div className="space-y-6">
@@ -721,10 +748,41 @@ const Dashboard = ({ stories, columns, currentJsonFile, startDate, endDate }) =>
 
       {/* Métricas por Usuario */}
       <div className="bg-white p-4 rounded-lg shadow-sm mb-6">
-        <h3 className="text-lg font-semibold text-slate-700 mb-4 flex items-center">
-          <User className="mr-2" />
-          Progreso por Asignado
-        </h3>
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-lg font-semibold text-slate-700 flex items-center">
+            <User className="mr-2" />
+            Progreso por Asignado
+          </h3>
+          <button
+            onClick={() => {
+              // Crear datos para exportar
+              const data = sortedUserMetrics.map(user => ({
+                'Usuario': user.name,
+                'Historias Completadas': user.completedStories,
+                'Historias Totales': user.totalStories,
+                '% Historias Completadas': `${user.completionRate}%`,
+                'Puntos Completados': user.completedPoints,
+                'Puntos Totales': user.totalPoints,
+                '% Puntos Completados': `${user.pointsCompletionRate}%`,
+                'Criterios Completados': user.completedCriteria,
+                'Criterios Totales': user.totalCriteria,
+                '% Criterios Completados': `${user.criteriaCompletionRate}%`
+              }));
+              
+              // Crear hoja de trabajo
+              const ws = XLSX.utils.json_to_sheet(data);
+              const wb = XLSX.utils.book_new();
+              XLSX.utils.book_append_sheet(wb, ws, 'Usuarios');
+              
+              // Exportar archivo
+              XLSX.writeFile(wb, 'progreso_usuarios.xlsx');
+            }}
+            className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          >
+            <Download className="h-3 w-3 mr-1" />
+            Exportar a Excel
+          </button>
+        </div>
         
         {userMetrics.length > 0 ? (
           <div className="space-y-6">
