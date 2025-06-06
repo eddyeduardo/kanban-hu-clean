@@ -146,15 +146,22 @@ const Dashboard = ({ stories, columns, currentJsonFile, startDate, endDate }) =>
           completedStories: 0,
           pendingStories: 0,
           totalCriteria: 0,
-          completedCriteria: 0
+          completedCriteria: 0,
+          totalPoints: 0,
+          completedPoints: 0
         });
       }
       
       const userData = userMap.get(user);
       userData.totalStories++;
       
+      // Calcular puntos de la historia (usar story.points o 1 por defecto)
+      const storyPoints = story.points || 1;
+      userData.totalPoints += storyPoints;
+      
       if (story.completedAt) {
         userData.completedStories++;
+        userData.completedPoints += storyPoints;
       } else {
         userData.pendingStories++;
       }
@@ -169,16 +176,25 @@ const Dashboard = ({ stories, columns, currentJsonFile, startDate, endDate }) =>
     });
     
     // Calcular porcentajes
-    return Array.from(userMap.values()).map(user => ({
-      ...user,
-      completionRate: user.totalStories > 0 
-        ? Math.round((user.completedStories / user.totalStories) * 100) 
-        : 0,
-      criteriaCompletionRate: user.totalCriteria > 0
-        ? Math.round((user.completedCriteria / user.totalCriteria) * 100)
-        : 0
-    }));
+    return Array.from(userMap.values())
+      .map(user => ({
+        ...user,
+        completionRate: user.totalStories > 0 
+          ? Math.round((user.completedStories / user.totalStories) * 100) 
+          : 0,
+        criteriaCompletionRate: user.totalCriteria > 0
+          ? Math.round((user.completedCriteria / user.totalCriteria) * 100)
+          : 0,
+        pointsCompletionRate: user.totalPoints > 0
+          ? Math.round((user.completedPoints / user.totalPoints) * 100)
+          : 0
+      }));
   }, [stories]);
+  
+  // Ordenar las métricas de usuarios por puntos completados (de mayor a menor)
+  const sortedUserMetrics = useMemo(() => {
+    return [...userMetrics].sort((a, b) => b.pointsCompletionRate - a.pointsCompletionRate);
+  }, [userMetrics]);
   
   // Colores para las barras
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEEAD'];
@@ -716,21 +732,42 @@ const Dashboard = ({ stories, columns, currentJsonFile, startDate, endDate }) =>
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart
-                  data={userMetrics}
+                  data={sortedUserMetrics}
                   layout="vertical"
                   margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
                 >
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis type="number" domain={[0, 100]} />
-                  <YAxis dataKey="name" type="category" width={120} />
+                  <YAxis 
+                    dataKey="name" 
+                    type="category" 
+                    width={120}
+                    tick={{ fontSize: 12 }}
+                  />
                   <Tooltip 
-                    formatter={(value, name) => [`${value}%`, name === 'completionRate' ? 'Historias Completadas' : 'Criterios Completados']}
+                    formatter={(value, name, props) => {
+                      const user = props.payload;
+                      return [
+                        `${value}%`,
+                        name === 'pointsCompletionRate' 
+                          ? `Puntos Completados (${user.completedPoints}/${user.totalPoints})` 
+                          : 'Progreso'
+                      ];
+                    }}
                     labelFormatter={(name) => `Asignado: ${name}`}
                   />
                   <Legend />
-                  <Bar dataKey="completionRate" name="Historias Completadas" fill="#8884d8">
-                    {userMetrics.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  <Bar 
+                    dataKey="pointsCompletionRate" 
+                    name="Puntos Completados" 
+                    fill="#4f46e5"
+                    radius={[0, 4, 4, 0]}
+                  >
+                    {sortedUserMetrics.map((entry, index) => (
+                      <Cell 
+                        key={`cell-${index}`} 
+                        fill={COLORS[index % COLORS.length]} 
+                      />
                     ))}
                   </Bar>
                 </BarChart>
@@ -749,7 +786,7 @@ const Dashboard = ({ stories, columns, currentJsonFile, startDate, endDate }) =>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-slate-200">
-                  {userMetrics.map((user, index) => (
+                  {sortedUserMetrics.map((user, index) => (
                     <tr key={user.name}>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">
                         {user.name}
@@ -764,10 +801,12 @@ const Dashboard = ({ stories, columns, currentJsonFile, startDate, endDate }) =>
                         <div className="w-full bg-slate-200 rounded-full h-2.5">
                           <div 
                             className="h-2.5 rounded-full bg-blue-600" 
-                            style={{ width: `${user.completionRate}%` }}
+                            style={{ width: `${user.pointsCompletionRate}%` }}
                           />
                         </div>
-                        <div className="text-xs text-slate-500 mt-1">{user.completionRate}% completado</div>
+                        <div className="text-xs text-slate-500 mt-1">
+                          {user.completedPoints} de {user.totalPoints} puntos ({user.pointsCompletionRate}%)
+                        </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
                         {user.completedCriteria} de {user.totalCriteria} criterios
