@@ -614,8 +614,10 @@ const Dashboard = ({ stories, columns, currentJsonFile, startDate, endDate }) =>
               const wb = XLSX.utils.book_new();
               XLSX.utils.book_append_sheet(wb, ws, 'Proyectos');
               
+              // Generar timestamp para el nombre del archivo
+              const timestamp = new Date().toISOString().replace(/[:.]/g, '-').replace('T', '_').slice(0, 19);
               // Exportar archivo
-              XLSX.writeFile(wb, 'progreso_proyectos.xlsx');
+              XLSX.writeFile(wb, `progreso_proyectos_${timestamp}.xlsx`);
             }}
             className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
           >
@@ -774,8 +776,10 @@ const Dashboard = ({ stories, columns, currentJsonFile, startDate, endDate }) =>
               const wb = XLSX.utils.book_new();
               XLSX.utils.book_append_sheet(wb, ws, 'Usuarios');
               
+              // Generar timestamp para el nombre del archivo
+              const timestamp = new Date().toISOString().replace(/[:.]/g, '-').replace('T', '_').slice(0, 19);
               // Exportar archivo
-              XLSX.writeFile(wb, 'progreso_usuarios.xlsx');
+              XLSX.writeFile(wb, `progreso_usuarios_${timestamp}.xlsx`);
             }}
             className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
           >
