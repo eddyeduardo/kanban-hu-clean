@@ -1,5 +1,9 @@
 import React, { useMemo } from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, AreaChart, Area } from 'recharts';
+import { 
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, 
+  ResponsiveContainer, AreaChart, Area, BarChart, Bar, Cell 
+} from 'recharts';
+import { User, CheckCircle } from 'react-feather';
 
 // Tooltip personalizado para los gráficos Burn Down
 const CustomTooltip = ({ active, payload, label }) => {
@@ -129,6 +133,56 @@ const Dashboard = ({ stories, columns, currentJsonFile, startDate, endDate }) =>
         / completedStoriesWithDuration.length)
     : 0;
     
+  // Calcular métricas por usuario
+  const userMetrics = useMemo(() => {
+    const userMap = new Map();
+    
+    stories.forEach(story => {
+      const user = story.user || 'Sin asignar';
+      if (!userMap.has(user)) {
+        userMap.set(user, {
+          name: user,
+          totalStories: 0,
+          completedStories: 0,
+          pendingStories: 0,
+          totalCriteria: 0,
+          completedCriteria: 0
+        });
+      }
+      
+      const userData = userMap.get(user);
+      userData.totalStories++;
+      
+      if (story.completedAt) {
+        userData.completedStories++;
+      } else {
+        userData.pendingStories++;
+      }
+      
+      // Contar criterios
+      story.criteria.forEach(criterion => {
+        userData.totalCriteria++;
+        if (criterion.checked) {
+          userData.completedCriteria++;
+        }
+      });
+    });
+    
+    // Calcular porcentajes
+    return Array.from(userMap.values()).map(user => ({
+      ...user,
+      completionRate: user.totalStories > 0 
+        ? Math.round((user.completedStories / user.totalStories) * 100) 
+        : 0,
+      criteriaCompletionRate: user.totalCriteria > 0
+        ? Math.round((user.completedCriteria / user.totalCriteria) * 100)
+        : 0
+    }));
+  }, [stories]);
+  
+  // Colores para las barras
+  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
+
   // Preparar datos para los gráficos de Burn Down Chart por columna
   const burnDownDataByColumn = useMemo(() => {
     console.log('Generando Burn Down Charts con:', { startDate, endDate, columns, stories });
@@ -398,6 +452,86 @@ const Dashboard = ({ stories, columns, currentJsonFile, startDate, endDate }) =>
             por historia completada
           </div>
         </div>
+      </div>
+      
+      {/* Métricas por Usuario */}
+      <div className="bg-white p-4 rounded-lg shadow-sm mb-6">
+        <h3 className="text-lg font-semibold text-slate-700 mb-4 flex items-center">
+          <User className="mr-2" />
+          Progreso por Asignado
+        </h3>
+        
+        {userMetrics.length > 0 ? (
+          <div className="space-y-6">
+            {/* Gráfico de barras */}
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={userMetrics}
+                  layout="vertical"
+                  margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis type="number" domain={[0, 100]} />
+                  <YAxis dataKey="name" type="category" width={120} />
+                  <Tooltip 
+                    formatter={(value, name) => [`${value}%`, name === 'completionRate' ? 'Historias Completadas' : 'Criterios Completados']}
+                    labelFormatter={(name) => `Asignado: ${name}`}
+                  />
+                  <Legend />
+                  <Bar dataKey="completionRate" name="Historias Completadas" fill="#8884d8">
+                    {userMetrics.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+            
+            {/* Tabla detallada */}
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-slate-200">
+                <thead className="bg-slate-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Asignado</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Historias</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Progreso</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Criterios</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-slate-200">
+                  {userMetrics.map((user, index) => (
+                    <tr key={user.name}>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">
+                        {user.name}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
+                        <div className="flex items-center">
+                          <CheckCircle className="h-4 w-4 text-green-500 mr-1" />
+                          {user.completedStories} de {user.totalStories} completadas
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="w-full bg-slate-200 rounded-full h-2.5">
+                          <div 
+                            className="h-2.5 rounded-full bg-blue-600" 
+                            style={{ width: `${user.completionRate}%` }}
+                          />
+                        </div>
+                        <div className="text-xs text-slate-500 mt-1">{user.completionRate}% completado</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
+                        {user.completedCriteria} de {user.totalCriteria} criterios
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ) : (
+          <p className="text-sm text-slate-500">No hay datos de usuarios disponibles.</p>
+        )}
       </div>
       
       {/* Burn Down Charts por columna */}

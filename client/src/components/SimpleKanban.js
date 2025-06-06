@@ -1,6 +1,73 @@
 import React, { useState, useEffect } from 'react';
+import { useDrag, useDrop } from 'react-dnd';
 import KanbanColumn from './KanbanColumn';
 import api from '../services/api';
+
+// Componente para manejar el arrastre de columnas
+const DraggableColumn = ({ column, children, index, moveColumn }) => {
+  const ref = React.useRef(null);
+  
+  const [, drop] = useDrop({
+    accept: 'COLUMN',
+    hover(item, monitor) {
+      if (!ref.current) {
+        return;
+      }
+      const dragIndex = item.index;
+      const hoverIndex = index;
+      
+      // No hacer nada si estamos sobre el mismo elemento
+      if (dragIndex === hoverIndex) {
+        return;
+      }
+      
+      // No permitir mover la columna "Por hacer"
+      if (column.name === 'Por hacer') {
+        return;
+      }
+      
+      // Determinar el tamaño del rectángulo y la posición del puntero
+      const hoverBoundingRect = ref.current?.getBoundingClientRect();
+      const hoverMiddleX = (hoverBoundingRect.right - hoverBoundingRect.left) / 2;
+      const clientOffset = monitor.getClientOffset();
+      const hoverClientX = clientOffset.x - hoverBoundingRect.left;
+      
+      // Solo realizar el movimiento cuando el mouse ha cruzado la mitad del elemento
+      // Arrastrando de izquierda a derecha
+      if (dragIndex < hoverIndex && hoverClientX < hoverMiddleX) {
+        return;
+      }
+      // Arrastrando de derecha a izquierda
+      if (dragIndex > hoverIndex && hoverClientX > hoverMiddleX) {
+        return;
+      }
+      
+      // Mover la columna
+      moveColumn(dragIndex, hoverIndex);
+      item.index = hoverIndex;
+    },
+  });
+  
+  const [{ isDragging }, drag] = useDrag({
+    type: 'COLUMN',
+    item: () => ({ id: column._id, index }),
+    canDrag: column.name !== 'Por hacer',
+    collect: (monitor) => ({
+      isDragging: monitor.isDragging(),
+    }),
+  });
+  
+  const opacity = isDragging ? 0.5 : 1;
+  
+  // Conectar el drag y drop al mismo elemento
+  drag(drop(ref));
+  
+  return (
+    <div ref={ref} style={{ opacity }}>
+      {children}
+    </div>
+  );
+};
 
 /**
  * SimpleKanban - Un componente Kanban simple que implementa arrastrar y soltar
@@ -14,7 +81,66 @@ import api from '../services/api';
  * @param {Function} props.onCriterionDelete - Función para manejar la eliminación de un criterio
  * @param {Function} props.onCriteriaReorder - Función para manejar el reordenamiento de criterios
  */
-const SimpleKanban = ({ columns, stories, onStoryMove, onOpenStoryModal, onCriterionCheck, onCriterionDelete, onCriteriaReorder }) => {
+const SimpleKanban = ({ 
+  columns: propColumns, 
+  stories, 
+  onStoryMove, 
+  onOpenStoryModal, 
+  onCriterionCheck, 
+  onCriterionDelete, 
+  onCriteriaReorder,
+  onColumnMove
+}) => {
+  const [columns, setColumns] = useState(propColumns);
+  
+  // Sincronizar las columnas cuando cambian las props
+  useEffect(() => {
+    setColumns(propColumns);
+  }, [propColumns]);
+  
+  // Función para manejar el reordenamiento de columnas
+  const moveColumn = (dragIndex, hoverIndex) => {
+    // No permitir mover la columna "Por hacer"
+    if (columns[dragIndex]?.name === 'Por hacer' || columns[hoverIndex]?.name === 'Por hacer') {
+      return;
+    }
+    
+    // No hacer nada si se suelta en la misma posición
+    if (dragIndex === hoverIndex) return;
+    
+    // Obtener los IDs de las columnas involucradas
+    const draggedId = columns[dragIndex]?._id;
+    const targetId = columns[hoverIndex]?._id;
+    
+    if (!draggedId || !targetId) {
+      console.error('No se encontraron los IDs de las columnas');
+      return;
+    }
+    
+    // Crear una copia del array de columnas
+    const newColumns = [...columns];
+    // Eliminar la columna arrastrada
+    const [movedColumn] = newColumns.splice(dragIndex, 1);
+    // Insertar en la nueva posición
+    newColumns.splice(hoverIndex, 0, movedColumn);
+    
+    // Actualizar el estado local
+    setColumns(newColumns);
+    
+    // Llamar a la función de ordenación en el servidor si está disponible
+    if (onColumnMove) {
+      try {
+        console.log('Moviendo columna:', { draggedId, targetId });
+        onColumnMove(draggedId, targetId);
+      } catch (error) {
+        console.error('Error al mover la columna:', error);
+        // Revertir los cambios si hay un error
+        setColumns(columns);
+      }
+    }
+  };
+  
+
   const [localStories, setLocalStories] = useState(stories);
   const [draggedStory, setDraggedStory] = useState(null);
   
@@ -48,21 +174,31 @@ const SimpleKanban = ({ columns, stories, onStoryMove, onOpenStoryModal, onCrite
       .sort((a, b) => (a.position || 0) - (b.position || 0));
   };
   
-  // Iniciar arrastre
+  // Iniciar arrastre de historia
   const handleDragStart = (e, story) => {
+    // No hacer nada si es un arrastre de columna
+    if (e.target.closest('.kanban-column-header')) {
+      return;
+    }
+    
     e.stopPropagation();
     setDraggedStory(story);
     e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/plain', story._id);
+    e.dataTransfer.setData('text/plain', `story:${story._id}`);
     // Añadir clase de estilo para el elemento arrastrado
     e.target.classList.add('dragging');
-    console.log('Iniciando arrastre de:', story.title);
+    console.log('Iniciando arrastre de historia:', story.title);
   };
 
   // Permitir soltar
   const handleDragOver = (e) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
+    // Solo permitir soltar si es una historia
+    const data = e.dataTransfer.types.includes('text/plain') && 
+                 e.dataTransfer.getData('text/plain').startsWith('story:');
+    if (data) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+    }
   };
 
   // Manejar soltar en una columna
@@ -70,8 +206,16 @@ const SimpleKanban = ({ columns, stories, onStoryMove, onOpenStoryModal, onCrite
     e.preventDefault();
     e.stopPropagation();
     
-    if (!draggedStory) {
-      console.log('No hay historia arrastrada');
+    // Verificar si se está soltando una historia
+    const data = e.dataTransfer.getData('text/plain');
+    if (!data.startsWith('story:')) {
+      return; // No es una historia, podría ser una columna
+    }
+    
+    const storyId = data.replace('story:', '');
+    
+    if (!storyId || !draggedStory) {
+      console.log('No hay historia arrastrada válida');
       return;
     }
 
@@ -135,24 +279,32 @@ const SimpleKanban = ({ columns, stories, onStoryMove, onOpenStoryModal, onCrite
   };
 
   return (
-    <div className="mb-8 flex overflow-x-auto pb-4">
-      {columns.map(column => {
+    <div className="mb-8 flex overflow-x-auto pb-4" style={{ minHeight: '100%' }}>
+      {columns.map((column, index) => {
         const columnStories = getStoriesForColumn(column._id);
         
         return (
-          <KanbanColumn
-            key={column._id}
-            column={column}
-            stories={columnStories}
-            onOpenStoryModal={onOpenStoryModal}
-            onCriterionCheck={onCriterionCheck}
-            onCriterionDelete={onCriterionDelete}
-            onCriteriaReorder={onCriteriaReorder}
-            onDrop={(e) => handleDrop(e, column._id)}
-            onDragOver={handleDragOver}
-            onDragStart={handleDragStart}
-            onDragEnd={handleDragEnd}
-          />
+          <DraggableColumn 
+            key={column._id} 
+            column={column} 
+            index={index}
+            moveColumn={moveColumn}
+          >
+            <div className="relative">
+              <KanbanColumn
+                column={column}
+                stories={columnStories}
+                onOpenStoryModal={onOpenStoryModal}
+                onCriterionCheck={onCriterionCheck}
+                onCriterionDelete={onCriterionDelete}
+                onCriteriaReorder={onCriteriaReorder}
+                onDrop={(e) => handleDrop(e, column._id)}
+                onDragOver={handleDragOver}
+                onDragStart={handleDragStart}
+                onDragEnd={handleDragEnd}
+              />
+            </div>
+          </DraggableColumn>
         );
       })}
     </div>

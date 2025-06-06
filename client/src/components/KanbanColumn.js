@@ -28,25 +28,39 @@ const KanbanColumn = ({
   onDragStart,
   onDragEnd
 }) => {
-  const handleDrop = (e) => {
-    e.preventDefault();
-    if (onDrop) onDrop(e, column._id);
-  };
+  // No necesitamos manejar el arrastre aquí, ya que ahora lo maneja DraggableColumn
 
+  // Prevenir el comportamiento por defecto para permitir el drop
   const handleDragOver = (e) => {
     e.preventDefault();
-    if (onDragOver) onDragOver(e);
+    e.stopPropagation();
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  // Manejar el drop de historias
+  const handleDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    // Verificar si es un arrastre de historia (no de columna)
+    const data = e.dataTransfer.getData('text/plain');
+    if (!data.startsWith('column:') && onDrop) {
+      onDrop(e, column._id);
+    }
   };
 
   return (
     <div 
       className="kanban-column bg-slate-200 p-3 rounded-lg shadow flex-shrink-0" 
-      style={{ width: '300px', marginRight: '1.5rem' }}
+      style={{ width: '300px', margin: '0 0.5rem' }}
+      data-column-id={column._id}
       onDrop={handleDrop}
       onDragOver={handleDragOver}
     >
       <div className="flex justify-between items-center mb-3 border-b-2 border-slate-300 pb-2">
-        <h2 className="text-lg font-semibold text-slate-700">{column.name}</h2>
+        <h2 className="text-lg font-semibold text-slate-700 select-none">
+          {column.name}
+        </h2>
         <button 
           className="p-1 text-slate-500 hover:text-blue-600 hover:bg-slate-300 rounded-full"
           title="Añadir nueva historia"

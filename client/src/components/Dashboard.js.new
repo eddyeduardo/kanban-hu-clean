@@ -1,0 +1,27 @@
+import React, { useMemo } from 'react';
+import { 
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, 
+  ResponsiveContainer, AreaChart, Area, BarChart, Bar, Cell 
+} from 'recharts';
+import { User, CheckCircle } from 'react-feather';
+
+// Tooltip personalizado para los gráficos Burn Down
+const CustomTooltip = ({ active, payload, label }) => {
+  if (active && payload && payload.length) {
+    return (
+      <div style={{ background: '#fff', border: '1px solid #ccc', padding: 10, borderRadius: 6 }}>
+        <strong>Fecha: {label}</strong>
+        <ul style={{ margin: 0, padding: 0, listStyle: 'none' }}>
+          {payload.map((entry, idx) => (
+            <li key={idx} style={{ color: entry.color, fontWeight: 'bold' }}>
+              {entry.name}: {entry.value}
+            </li>
+          ))}
+        </ul>
+      </div>
+    );
+  }
+  return null;
+};
+
+// ... resto del archivo existente ...

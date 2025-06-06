@@ -107,6 +107,151 @@ router.patch('/:id', async (req, res) => {
   }
 });
 
+// Reorder columns
+router.patch('/reorder', async (req, res) => {
+  console.log('=== INICIO DE SOLICITUD DE REORDENAMIENTO ===');
+  console.log('Cuerpo de la solicitud:', JSON.stringify(req.body, null, 2));
+  console.log('Headers:', req.headers);
+  
+  const session = await mongoose.startSession();
+  session.startTransaction();
+  
+  try {
+    const { draggedId, targetId, jsonFileName } = req.body;
+    console.log('Datos recibidos:', { draggedId, targetId, jsonFileName });
+    
+    if (!draggedId || !targetId) {
+      const errorMsg = 'Faltan parámetros requeridos';
+      console.error(errorMsg, { draggedId, targetId });
+      await session.abortTransaction();
+      session.endSession();
+      return res.status(400).json({ 
+        success: false, 
+        message: errorMsg,
+        receivedData: req.body
+      });
+    }
+    
+    if (!draggedId || !targetId) {
+      console.error('Faltan parámetros requeridos:', { draggedId, targetId });
+      await session.abortTransaction();
+      session.endSession();
+      return res.status(400).json({ message: 'Se requieren draggedId y targetId' });
+    }
+    
+    // Construir el query para incluir columnas
+    const query = {};
+    if (jsonFileName) {
+      query.jsonFileName = jsonFileName;
+      console.log('Buscando columnas con jsonFileName:', jsonFileName);
+    } else {
+      query.isDefault = true;
+      console.log('Buscando columnas por defecto (isDefault: true)');
+    }
+    
+    console.log('Buscando columnas con query:', query);
+    
+    // Obtener las columnas ordenadas por posición
+    const columns = await Column.find(query).sort({ position: 1 }).session(session);
+    console.log(`Se encontraron ${columns.length} columnas`);
+    
+    // Verificar que tengamos columnas para trabajar
+    if (columns.length === 0) {
+      console.error('No se encontraron columnas para reordenar');
+      await session.abortTransaction();
+      session.endSession();
+      return res.status(404).json({ message: 'No columns found to reorder' });
+    }
+    
+    // Encontrar los índices de las columnas involucradas
+    const draggedIndex = columns.findIndex(col => col._id.toString() === draggedId);
+    const targetIndex = columns.findIndex(col => col._id.toString() === targetId);
+    
+    console.log('Índices encontrados:', { 
+      draggedIndex, 
+      targetIndex,
+      columns: columns.map((c, i) => `${i}: ${c.name} (${c._id})`)
+    });
+    
+    if (draggedIndex === -1 || targetIndex === -1) {
+      console.error('No se encontraron las columnas:', { 
+        draggedId, 
+        targetId,
+        availableIds: columns.map(c => c._id.toString())
+      });
+      await session.abortTransaction();
+      session.endSession();
+      return res.status(404).json({ message: 'Column not found' });
+    }
+    
+    // Mover la columna arrastrada a la nueva posición
+    const [movedColumn] = columns.splice(draggedIndex, 1);
+    columns.splice(targetIndex, 0, movedColumn);
+    
+    console.log('Nuevo orden de columnas:');
+    columns.forEach((col, index) => {
+      console.log(`${index}: ${col.name} (${col._id})`);
+    });
+    
+    // Actualizar las posiciones de todas las columnas en una sola operación
+    const updatePromises = columns.map(async (col, index) => {
+      try {
+        const result = await Column.findByIdAndUpdate(
+          col._id,
+          { $set: { position: index } },
+          { new: true, session }
+        );
+        console.log(`Actualizada columna ${col.name} a posición ${index}:`, 
+          result ? 'éxito' : 'falló');
+        return result;
+      } catch (error) {
+        console.error(`Error actualizando columna ${col._id}:`, error);
+        throw error;
+      }
+    });
+    
+    // Esperar a que todas las actualizaciones se completen
+    const updatedColumns = await Promise.all(updatePromises);
+    
+    // Confirmar la transacción
+    await session.commitTransaction();
+    session.endSession();
+    
+    console.log('Todas las columnas se actualizaron correctamente');
+    
+    res.json({ 
+      message: 'Columns reordered successfully',
+      columns: updatedColumns
+    });
+    
+  } catch (error) {
+    console.error('Error en el reordenamiento:', error);
+    
+    // Intentar abortar la transacción si hay un error
+    if (session && session.inTransaction()) {
+      console.log('Abortando transacción...');
+      await session.abortTransaction();
+    }
+    
+    if (session) {
+      console.log('Cerrando sesión...');
+      await session.endSession();
+    }
+    
+    console.error('Error completo:', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name
+    });
+    
+    res.status(500).json({ 
+      message: 'Error reordering columns', 
+      error: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
+  }
+});
+
 // Delete a column
 router.delete('/:id', async (req, res) => {
   try {
