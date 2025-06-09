@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import api from '../services/api';
+import { saveAs } from 'file-saver';
 
 /**
  * Componente para mostrar el alcance del proyecto en un formato amigable
@@ -10,8 +11,70 @@ const ScopeView = ({ columns: propColumns, stories: propStories }) => {
   const [stories, setStories] = useState(propStories);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [exporting, setExporting] = useState(false);
   
   // Función para recargar los datos
+  // Función para exportar criterios según el estado de finalización
+  const exportCriteria = useCallback((type = 'all') => {
+    setExporting(true);
+    try {
+      // Recopilar todos los criterios de todas las historias
+      const allCriteria = [];
+      const currentStories = Array.isArray(stories) ? stories : [];
+      const currentColumns = Array.isArray(columns) ? columns : [];
+      
+      currentStories.forEach(story => {
+        if (story.criteria && story.criteria.length > 0) {
+          story.criteria.forEach(criterion => {
+            // Filtrar según el tipo de exportación
+            if (type === 'all' || 
+                (type === 'completed' && criterion.checked) ||
+                (type === 'pending' && !criterion.checked)) {
+              allCriteria.push({
+                historia: story.title,
+                descripcion: story.description || 'Sin descripción',
+                columna: currentColumns.find(c => c._id === story.column)?.name || 'Sin columna',
+                criterio: criterion.text,
+                estado: criterion.checked ? 'Completado' : 'Pendiente',
+                fechaCompletado: criterion.completedAt ? new Date(criterion.completedAt).toLocaleDateString() : 'N/A'
+              });
+            }
+          });
+        }
+      });
+      
+      if (allCriteria.length === 0) {
+        setError(`No hay criterios ${type === 'completed' ? 'completados' : type === 'pending' ? 'pendientes' : ''} para exportar.`);
+        return;
+      }
+      
+      // Convertir a CSV
+      const headers = ['Historia', 'Descripción', 'Columna', 'Criterio', 'Estado', 'Fecha de Completado'];
+      const csvContent = [
+        headers.join(','),
+        ...allCriteria.map(item => [
+          `"${item.historia.replace(/"/g, '""')}"`,
+          `"${item.descripcion.replace(/"/g, '""')}"`,
+          `"${item.columna}"`,
+          `"${item.criterio.replace(/"/g, '""')}"`,
+          `"${item.estado}"`,
+          `"${item.fechaCompletado}"`
+        ].join(','))
+      ].join('\n');
+      
+      // Crear y descargar el archivo
+      const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
+      const fileName = `criterios_${type}_${new Date().toISOString().split('T')[0]}.csv`;
+      saveAs(blob, fileName);
+      
+    } catch (err) {
+      console.error('Error al exportar criterios:', err);
+      setError('Error al exportar los criterios. Por favor, inténtalo de nuevo.');
+    } finally {
+      setExporting(false);
+    }
+  }, [stories, columns]);
+
   const reloadData = async () => {
     try {
       setLoading(true);
@@ -132,8 +195,31 @@ const ScopeView = ({ columns: propColumns, stories: propStories }) => {
 
   return (
     <div className="scope-view p-4">
-      <div className="mb-6">
+      <div className="mb-6 flex justify-between items-center">
         <h2 className="text-xl font-semibold text-slate-700">Alcance del Proyecto</h2>
+        <div className="space-x-2">
+          <button
+            onClick={() => exportCriteria('all')}
+            disabled={exporting}
+            className="px-3 py-1.5 text-xs font-medium bg-blue-50 text-blue-700 rounded hover:bg-blue-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {exporting ? 'Exportando...' : 'Exportar Todo'}
+          </button>
+          <button
+            onClick={() => exportCriteria('completed')}
+            disabled={exporting}
+            className="px-3 py-1.5 text-xs font-medium bg-green-50 text-green-700 rounded hover:bg-green-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {exporting ? 'Exportando...' : 'Exportar Finalizados'}
+          </button>
+          <button
+            onClick={() => exportCriteria('pending')}
+            disabled={exporting}
+            className="px-3 py-1.5 text-xs font-medium bg-yellow-50 text-yellow-700 rounded hover:bg-yellow-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {exporting ? 'Exportando...' : 'Exportar Pendientes'}
+          </button>
+        </div>
       </div>
       
       {error && (
