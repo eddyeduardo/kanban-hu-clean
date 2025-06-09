@@ -671,8 +671,6 @@ const Dashboard = ({ stories, columns, currentJsonFile, startDate, endDate }) =>
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Proyecto</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Historias</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Puntos</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Progreso</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Criterios</th>
                   </tr>
                 </thead>
@@ -686,15 +684,12 @@ const Dashboard = ({ stories, columns, currentJsonFile, startDate, endDate }) =>
                             <div className="text-sm font-medium text-slate-900">
                               {project.name}
                             </div>
-                            <div className="text-sm text-slate-500">
-                              {project.completedPoints} / {project.totalPoints} pts
-                            </div>
                           </div>
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-slate-900">
-                          {project.completedStories} / {project.totalStories}
+                          {project.completedStories} de {project.totalStories}
                         </div>
                         <div className="w-full bg-slate-200 rounded-full h-2.5 mt-1">
                           <div 
@@ -702,39 +697,19 @@ const Dashboard = ({ stories, columns, currentJsonFile, startDate, endDate }) =>
                             style={{ width: `${project.completionRate}%` }}
                           ></div>
                         </div>
+                        <div className="text-xs text-slate-500 mt-1">{project.completionRate}% completado</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-slate-900">
-                          {project.completedPoints} / {project.totalPoints}
+                          {project.completedCriteria} de {project.totalCriteria}
                         </div>
                         <div className="w-full bg-slate-200 rounded-full h-2.5 mt-1">
                           <div 
-                            className="bg-green-500 h-2.5 rounded-full" 
-                            style={{ width: `${project.pointsCompletionRate}%` }}
-                          ></div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-slate-900">
-                          {project.completionRate}%
-                        </div>
-                        <div className="w-full bg-slate-200 rounded-full h-2.5 mt-1">
-                          <div 
-                            className="bg-yellow-500 h-2.5 rounded-full" 
-                            style={{ width: `${project.completionRate}%` }}
-                          ></div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-slate-900">
-                          {project.completedCriteria} / {project.totalCriteria}
-                        </div>
-                        <div className="w-full bg-slate-200 rounded-full h-2.5 mt-1">
-                          <div 
-                            className="bg-purple-500 h-2.5 rounded-full" 
+                            className="bg-purple-500 h-2.5 rounded-full"
                             style={{ width: `${project.criteriaCompletionRate}%` }}
                           ></div>
                         </div>
+                        <div className="text-xs text-slate-500 mt-1">{project.criteriaCompletionRate}% completado</div>
                       </td>
                     </tr>
                   ))}
@@ -763,9 +738,6 @@ const Dashboard = ({ stories, columns, currentJsonFile, startDate, endDate }) =>
                 'Historias Completadas': user.completedStories,
                 'Historias Totales': user.totalStories,
                 '% Historias Completadas': `${user.completionRate}%`,
-                'Puntos Completados': user.completedPoints,
-                'Puntos Totales': user.totalPoints,
-                '% Puntos Completados': `${user.pointsCompletionRate}%`,
                 'Criterios Completados': user.completedCriteria,
                 'Criterios Totales': user.totalCriteria,
                 '% Criterios Completados': `${user.criteriaCompletionRate}%`
@@ -811,8 +783,8 @@ const Dashboard = ({ stories, columns, currentJsonFile, startDate, endDate }) =>
                       const user = props.payload;
                       return [
                         `${value}%`,
-                        name === 'pointsCompletionRate' 
-                          ? `Puntos Completados (${user.completedPoints}/${user.totalPoints})` 
+                        name === 'completionRate' 
+                          ? `Historias Completadas (${user.completedStories}/${user.totalStories})` 
                           : 'Progreso'
                       ];
                     }}
@@ -820,8 +792,8 @@ const Dashboard = ({ stories, columns, currentJsonFile, startDate, endDate }) =>
                   />
                   <Legend />
                   <Bar 
-                    dataKey="pointsCompletionRate" 
-                    name="Puntos Completados" 
+                    dataKey="completionRate" 
+                    name="Historias Completadas" 
                     fill="#4f46e5"
                     radius={[0, 4, 4, 0]}
                   >
@@ -843,7 +815,6 @@ const Dashboard = ({ stories, columns, currentJsonFile, startDate, endDate }) =>
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Asignado</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Historias</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Progreso</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Criterios</th>
                   </tr>
                 </thead>
