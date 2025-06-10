@@ -10,8 +10,9 @@ import { FiPlus, FiX, FiTrash2 } from 'react-icons/fi';
  * @param {Function} props.onSave - Function to save the story
  * @param {Object|null} props.story - Story data (null for new story)
  */
-const StoryModal = ({ isOpen, onClose, onSave, story }) => {
+const StoryModal = ({ isOpen, onClose, onSave, story, currentJsonFile }) => {
   const [title, setTitle] = useState('');
+  const [idHistoria, setIdHistoria] = useState('');
   const [criteria, setCriteria] = useState([{ id: Date.now(), text: '' }]);
   const criteriaContainerRef = useRef(null);
 
@@ -22,23 +23,36 @@ const StoryModal = ({ isOpen, onClose, onSave, story }) => {
     }
   }, [criteria]);
 
-  // Update form when story changes
+  // Update form when story changes or modal opens
   useEffect(() => {
     if (story) {
       setTitle(story.title || '');
+      // Usar el id_historia existente o intentar generarlo si no existe
+      setIdHistoria(story.id_historia || '');
       
       // Set criteria from story
       if (story.criteria && Array.isArray(story.criteria) && story.criteria.length > 0) {
         setCriteria(story.criteria.map((c, index) => ({
           id: c.id?.toString() || `temp-${Date.now()}-${index}`,
-          text: c.text || ''
+          text: c.text || '',
+          checked: c.checked || false
         })));
       } else {
-        setCriteria([{ id: `temp-${Date.now()}`, text: '' }]);
+        setCriteria([{ id: `temp-${Date.now()}`, text: '', checked: false }]);
       }
     } else {
       setTitle('');
-      setCriteria([{ id: `temp-${Date.now()}`, text: '' }]);
+      // Generar ID de historia por defecto solo si no hay un ID existente
+      if (!story?.id_historia) {
+        const clientId = currentJsonFile ? currentJsonFile.substring(0, 5).toUpperCase() : 'NNNNN';
+        // Buscar el siguiente número de secuencia
+        const storyCount = (story?._id ? 0 : 1); // Si es una historia nueva, asumimos que es la primera
+        const nextNumber = String(storyCount + 1).padStart(3, '0');
+        setIdHistoria(`HU-${clientId}-${nextNumber}`);
+      } else {
+        setIdHistoria(story.id_historia);
+      }
+      setCriteria([{ id: `temp-${Date.now()}`, text: '', checked: false }]);
     }
   }, [story, isOpen]);
 
@@ -69,7 +83,14 @@ const StoryModal = ({ isOpen, onClose, onSave, story }) => {
       return;
     }
     
-      // Process criteria: filter out empty ones and trim text
+    // Validar formato del ID de historia (HU-XXXXX-###)
+    const idHistoriaRegex = /^HU-[A-Z0-9]{5}-\d{3}$/;
+    if (idHistoria && !idHistoriaRegex.test(idHistoria)) {
+      alert('El ID de historia debe tener el formato: HU-XXXXX-001 (donde X son letras/números y 001 es el número de historia)');
+      return;
+    }
+    
+    // Process criteria: filter out empty ones and trim text
     const processedCriteria = criteria
       .map(criterionInModal => ({
         // Only include the text and checked status
@@ -79,10 +100,12 @@ const StoryModal = ({ isOpen, onClose, onSave, story }) => {
       }))
       .filter(criterion => criterion.text !== ''); // Remove empty criteria
 
-    // Pass the processed criteria to parent
+    // Pass the processed data to parent
     onSave({ 
       title, 
-      criteria: processedCriteria 
+      id_historia: idHistoria,
+      criteria: processedCriteria,
+      jsonFileName: currentJsonFile || null
     });
   };
 
@@ -109,6 +132,35 @@ const StoryModal = ({ isOpen, onClose, onSave, story }) => {
                 className="w-full p-2 border border-slate-300 rounded-md"
                 required
               />
+            </div>
+            
+            <div className="mb-4">
+              <label htmlFor="storyId" className="block text-sm font-medium text-slate-700 mb-1">
+                ID de Historia:
+              </label>
+              <div className="relative">
+                <input
+                  type="text"
+                  id="storyId"
+                  value={idHistoria}
+                  onChange={(e) => {
+                    // Permitir solo mayúsculas, números y guiones
+                    const value = e.target.value.toUpperCase();
+                    if (/^HU-[A-Z0-9]{0,5}(-\d{0,3})?$/.test(value) || value === '') {
+                      setIdHistoria(value);
+                    }
+                  }}
+                  className="w-full p-2 border border-slate-300 rounded-md font-mono"
+                  placeholder="Ej: HU-ABC12-001"
+                  required
+                />
+                <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                  <span className="text-slate-400 text-xs">HU-XXXXX-###</span>
+                </div>
+              </div>
+              <p className="mt-1 text-xs text-slate-500">
+                Formato: HU-{currentJsonFile ? `${currentJsonFile.substring(0, 5).toUpperCase()}` : 'XXXXX'}-001
+              </p>
             </div>
             
             <div className="mb-4">

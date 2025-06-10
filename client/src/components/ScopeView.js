@@ -18,49 +18,89 @@ const ScopeView = ({ columns: propColumns, stories: propStories }) => {
   const exportCriteria = useCallback((type = 'all') => {
     setExporting(true);
     try {
-      // Recopilar todos los criterios de todas las historias
-      const allCriteria = [];
-      const currentStories = Array.isArray(stories) ? stories : [];
-      const currentColumns = Array.isArray(columns) ? columns : [];
+      // Obtener columnas ordenadas (excluyendo la primera columna - Backlog)
+      const sortedCols = [...(Array.isArray(columns) ? columns : [])]
+        .sort((a, b) => (a.position || 0) - (b.position || 0))
+        .filter((_, index) => index > 0);
       
-      currentStories.forEach(story => {
-        if (story.criteria && story.criteria.length > 0) {
-          story.criteria.forEach(criterion => {
-            // Filtrar según el tipo de exportación
-            if (type === 'all' || 
-                (type === 'completed' && criterion.checked) ||
-                (type === 'pending' && !criterion.checked)) {
-              allCriteria.push({
-                historia: story.title,
-                descripcion: story.description || 'Sin descripción',
-                columna: currentColumns.find(c => c._id === story.column)?.name || 'Sin columna',
-                criterio: criterion.text,
-                estado: criterion.checked ? 'Completado' : 'Pendiente',
-                fechaCompletado: criterion.completedAt ? new Date(criterion.completedAt).toLocaleDateString() : 'N/A'
-              });
-            }
-          });
-        }
+      // Crear un mapa de historias por columna
+      const storiesByCol = {};
+      const storiesList = Array.isArray(stories) ? stories : [];
+      
+      // Inicializar el mapa con arrays vacíos para cada columna
+      sortedCols.forEach(col => {
+        if (col._id) storiesByCol[col._id] = [];
       });
       
-      if (allCriteria.length === 0) {
+      // Asignar historias a sus columnas
+      storiesList.forEach(story => {
+        if (!story.column) return;
+        const colId = typeof story.column === 'object' ? story.column._id : story.column;
+        if (storiesByCol[colId]) storiesByCol[colId].push(story);
+      });
+      
+      // Ordenar historias por posición en cada columna
+      Object.values(storiesByCol).forEach(colStories => {
+        colStories.sort((a, b) => (a.position || 0) - (b.position || 0));
+      });
+      
+      // Construir el contenido CSV
+      let csvLines = [];
+      let hasData = false;
+      
+      // Recorrer cada columna ordenada
+      for (const column of sortedCols) {
+        if (!column._id) continue;
+        
+        const columnStories = storiesByCol[column._id] || [];
+        if (columnStories.length === 0) continue;
+        
+        // Agregar encabezado de columna
+        csvLines.push(`"${column.name}",,,,,`);
+        
+        // Recorrer historias de la columna
+        for (const story of columnStories) {
+          if (!story.criteria || !Array.isArray(story.criteria)) continue;
+          
+          // Filtrar criterios según el tipo
+          const filteredCriteria = story.criteria.filter(criterion => {
+            if (type === 'all') return true;
+            return type === 'completed' ? criterion.checked : !criterion.checked;
+          });
+          
+          if (filteredCriteria.length === 0) continue;
+          
+          hasData = true;
+          
+          // Agregar historia
+          csvLines.push(`"${(story.title || '').replace(/"/g, '""')}","${(story.description || '').replace(/"/g, '""')}",,,`);
+          
+          // Agregar cada criterio
+          for (const criterion of filteredCriteria) {
+            const status = criterion.checked ? 'Completado' : 'Pendiente';
+            const date = criterion.completedAt ? new Date(criterion.completedAt).toLocaleDateString() : 'N/A';
+            csvLines.push(`,,"${(criterion.text || '').replace(/"/g, '""')}","${status}","${date}"`);
+          }
+          
+          // Espacio después de cada historia
+          csvLines.push(',,,,');
+        }
+        
+        // Espacio después de cada columna
+        csvLines.push('');
+      }
+      
+      if (!hasData) {
         setError(`No hay criterios ${type === 'completed' ? 'completados' : type === 'pending' ? 'pendientes' : ''} para exportar.`);
         return;
       }
       
-      // Convertir a CSV
-      const headers = ['Historia', 'Descripción', 'Columna', 'Criterio', 'Estado', 'Fecha de Completado'];
-      const csvContent = [
-        headers.join(','),
-        ...allCriteria.map(item => [
-          `"${item.historia.replace(/"/g, '""')}"`,
-          `"${item.descripcion.replace(/"/g, '""')}"`,
-          `"${item.columna}"`,
-          `"${item.criterio.replace(/"/g, '""')}"`,
-          `"${item.estado}"`,
-          `"${item.fechaCompletado}"`
-        ].join(','))
-      ].join('\n');
+      // Agregar encabezados al principio
+      const headers = ['Historia', 'Descripción', 'Criterio', 'Estado', 'Fecha de Completado'];
+      csvLines.unshift(headers.join(','));
+      
+      // Unir todas las líneas del CSV
+      const csvContent = csvLines.join('\n');
       
       // Crear y descargar el archivo
       const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });

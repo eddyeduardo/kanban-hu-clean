@@ -237,8 +237,22 @@ const SimpleKanban = ({
     try {
       console.log(`Actualizando historia ${draggedStory._id} a columna ${columnId}`);
       
-      // Actualizar la columna de la historia en el servidor
-      await api.updateStory(draggedStory._id, { column: columnId });
+      // Obtener el nombre de la columna de destino
+      const targetColumn = columns.find(col => col._id === columnId);
+      const columnName = targetColumn ? targetColumn.name : 'Sin columna';
+      
+      // Actualizar la historia en el servidor con la nueva columna y el usuario
+      const updateData = { 
+        column: columnId,
+        user: columnName // Actualizar el usuario con el nombre de la columna
+      };
+      
+      // Si la historia no tiene id_historia, asegurarse de mantenerlo
+      if (draggedStory.id_historia) {
+        updateData.id_historia = draggedStory.id_historia;
+      }
+      
+      await api.updateStory(draggedStory._id, updateData);
       
       // Actualizar el estado local
       const updatedStories = localStories.map(story => {
@@ -246,7 +260,8 @@ const SimpleKanban = ({
           const updatedStory = { 
             ...story, 
             column: columnId,
-            column: { _id: columnId } 
+            column: { _id: columnId },
+            user: columnName // Actualizar el usuario localmente también
           };
           console.log('Historia actualizada:', updatedStory);
           return updatedStory;

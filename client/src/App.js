@@ -301,7 +301,10 @@ function App() {
   // Handler for saving a story
   const handleSaveStory = async (storyData) => {
     try {
-      console.log('Guardando historia:', { storyData, currentStory });
+      console.log('=== INICIO handleSaveStory ===');
+      console.log('Datos de la historia recibidos:', JSON.stringify(storyData, null, 2));
+      console.log('Historia actual:', JSON.stringify(currentStory, null, 2));
+      console.log('Archivo JSON actual:', currentJsonFile);
       
       // Procesar los criterios
       if (storyData.criteria && storyData.criteria.length > 0) {
@@ -343,20 +346,90 @@ function App() {
       }
       
       if (currentStory) {
-        // Update existing story
-        const response = await api.updateStory(currentStory._id, storyData);
+        // Update existing story - Asegurarse de incluir id_historia
+        const updateData = { ...storyData };
+        
+        console.log('=== ACTUALIZANDO HISTORIA EXISTENTE ===');
+        console.log('Datos antes de actualizar:', JSON.stringify(updateData, null, 2));
+        
+        // Asegurarse de que los campos importantes no se pierdan
+        if (!updateData.id_historia && currentStory.id_historia) {
+          updateData.id_historia = currentStory.id_historia;
+          console.log('Manteniendo id_historia existente:', updateData.id_historia);
+        }
+        
+        if (!updateData.user && currentStory.user) {
+          updateData.user = currentStory.user;
+          console.log('Manteniendo usuario existente:', updateData.user);
+        }
+        
+        if (!updateData.jsonFileName && currentStory.jsonFileName) {
+          updateData.jsonFileName = currentStory.jsonFileName;
+          console.log('Manteniendo jsonFileName existente:', updateData.jsonFileName);
+        }
+        
+        console.log('Datos que se enviarán al servidor:', JSON.stringify(updateData, null, 2));
+        
+        const response = await api.updateStory(currentStory._id, updateData);
+        console.log('Respuesta del servidor:', JSON.stringify(response.data, null, 2));
+        
         setStories(stories.map(s => s._id === currentStory._id ? response.data : s));
       } else {
-        // Create new story
-        const response = await api.createStory({
+        console.log('=== CREANDO NUEVA HISTORIA ===');
+        console.log('Datos de la historia recibidos:', JSON.stringify(storyData, null, 2));
+        
+        // Obtener el nombre de la columna de destino
+        const targetColumn = columns.find(col => col._id === targetColumnId);
+        const columnName = targetColumn ? targetColumn.name : 'Sin columna';
+        console.log('Columna de destino:', columnName);
+        
+        // Usar el ID de historia proporcionado o generar uno nuevo
+        const storyId = storyData.id_historia || 
+          `HU-${currentJsonFile ? currentJsonFile.substring(0, 5).toUpperCase() : 'CLI01'}-${String(stories.length + 1).padStart(3, '0')}`;
+        
+        console.log('ID de historia generado:', storyId);
+        
+        // Crear objeto con los datos de la historia
+        const newStoryData = {
           ...storyData,
-          column: targetColumnId
-        });
+          column: targetColumnId,
+          user: columnName,  // Guardar el nombre de la columna como usuario
+        };
+        
+        // Solo agregar id_historia si no está vacío
+        if (storyId) {
+          newStoryData.id_historia = storyId;
+          console.log('ID de historia asignado:', newStoryData.id_historia);
+        }
+        
+        // Solo agregar jsonFileName si existe
+        if (currentJsonFile) {
+          newStoryData.jsonFileName = currentJsonFile;
+          console.log('Archivo JSON asignado:', newStoryData.jsonFileName);
+        }
+        
+        console.log('Datos completos que se enviarán al servidor:', JSON.stringify(newStoryData, null, 2));
+        
+        const response = await api.createStory(newStoryData);
+        console.log('Respuesta del servidor:', JSON.stringify(response.data, null, 2));
+        
+        // Verificar que los campos se guardaron correctamente
+        if (!response.data.id_historia) {
+          console.error('ERROR: El servidor no devolvió el id_historia');
+        }
+        if (!response.data.user) {
+          console.error('ERROR: El servidor no devolvió el usuario');
+        }
+        if (!response.data.jsonFileName) {
+          console.error('ERROR: El servidor no devolvió el jsonFileName');
+        }
+        
         setStories([...stories, response.data]);
       }
       setModalOpen(false);
     } catch (err) {
-      setError('Error saving story: ' + (err.response?.data?.message || err.message));
+      setError('Error guardando historia: ' + (err.response?.data?.message || err.message));
+      console.error('Error al guardar la historia:', err);
     }
   };
 
@@ -536,16 +609,18 @@ function App() {
             }}
           />
         )}
-      </div>
 
-      <StoryModal
-        isOpen={modalOpen}
-        onClose={() => setModalOpen(false)}
-        onSave={handleSaveStory}
-        story={currentStory}
-      />
+        {/* Story Modal */}
+        <StoryModal
+          isOpen={modalOpen}
+          onClose={() => setModalOpen(false)}
+          onSave={handleSaveStory}
+          story={currentStory}
+          currentJsonFile={currentJsonFile}
+        />
+      </div>
     </div>
   );
-}
+};
 
 export default App;

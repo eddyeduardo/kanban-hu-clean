@@ -35,12 +35,25 @@ router.post('/', async (req, res) => {
     const maxPosition = await Story.findOne({ column: req.body.column }).sort({ position: -1 });
     const position = maxPosition ? maxPosition.position + 1 : 0;
     
-    const story = new Story({
+    // Get column name for the user field
+    const columnName = column.name || 'Sin columna';
+    
+    // Crear objeto con todos los campos de la historia
+    const storyData = {
       title: req.body.title,
       criteria: req.body.criteria || [],
       column: req.body.column,
-      position: position
-    });
+      position: position,
+      user: columnName, // Establecer el usuario como el nombre de la columna por defecto
+      // Incluir id_historia si está presente (puede ser undefined)
+      ...(req.body.id_historia && { id_historia: req.body.id_historia }),
+      // Incluir jsonFileName si está presente
+      ...(req.body.jsonFileName && { jsonFileName: req.body.jsonFileName })
+    };
+
+    console.log('Creando nueva historia con datos:', JSON.stringify(storyData, null, 2));
+    
+    const story = new Story(storyData);
     
     const newStory = await story.save();
     res.status(201).json(newStory);
@@ -80,8 +93,30 @@ router.patch('/:id', async (req, res) => {
       }
     }
     
-    // Update the fields
+    // Actualizar los campos básicos
     if (req.body.title) story.title = req.body.title;
+    
+    // Actualizar id_historia si se proporciona (incluso si es null o vacío)
+    if ('id_historia' in req.body) {
+      story.id_historia = req.body.id_historia || undefined; // Usar undefined para eliminar el campo si es vacío
+    }
+    
+    // Actualizar user si se proporciona (incluso si es null o vacío)
+    if ('user' in req.body) {
+      story.user = req.body.user || undefined; // Usar undefined para eliminar el campo si es vacío
+    }
+    
+    // Actualizar jsonFileName si se proporciona (incluso si es null o vacío)
+    if ('jsonFileName' in req.body) {
+      story.jsonFileName = req.body.jsonFileName || undefined; // Usar undefined para eliminar el campo si es vacío
+    }
+    
+    console.log('Actualizando historia con datos:', {
+      id_historia: story.id_historia,
+      user: story.user,
+      jsonFileName: story.jsonFileName,
+      column: req.body.column
+    });
     
     // Si estamos actualizando los criterios, manejar los timestamps
     if (req.body.criteria) {
@@ -125,17 +160,57 @@ router.patch('/:id', async (req, res) => {
       story.criteria = req.body.criteria;
     }
     
-    if (req.body.column) story.column = req.body.column;
-    if (req.body.position !== undefined) story.position = req.body.position;
+    // Actualizar la columna si se proporciona
+    if (req.body.column) {
+      console.log(`Actualizando columna a: ${req.body.column}`);
+      story.column = req.body.column;
+      
+      // Si no se proporcionó un usuario, usar el nombre de la columna
+      if (!story.user) {
+        const targetColumn = await Column.findById(req.body.column);
+        if (targetColumn) {
+          story.user = targetColumn.name;
+          console.log(`Usuario actualizado con el nombre de la columna: ${story.user}`);
+        }
+      }
+    }
+    
+    // Actualizar posición si se proporciona
+    if (req.body.position !== undefined) {
+      console.log(`Actualizando posición a: ${req.body.position}`);
+      story.position = req.body.position;
+    }
     
     // Actualizar la fecha de finalización de la historia si se proporciona
     if (req.body.completedAt !== undefined) {
-      console.log(`Updating story completion date: ${req.body.completedAt}`);
+      console.log(`Actualizando fecha de finalización: ${req.body.completedAt}`);
       story.completedAt = req.body.completedAt;
     }
     
+    console.log('Guardando historia con datos:', {
+      id_historia: story.id_historia,
+      user: story.user,
+      jsonFileName: story.jsonFileName,
+      column: story.column,
+      position: story.position
+    });
+    
+    // Guardar la historia
     const updatedStory = await story.save();
-    res.json(updatedStory);
+    
+    // Hacer un populate del campo column para asegurarnos de que tenemos los datos actualizados
+    const populatedStory = await Story.findById(updatedStory._id).populate('column', 'name');
+    
+    console.log('Historia guardada con éxito:', JSON.stringify({
+      _id: populatedStory._id,
+      id_historia: populatedStory.id_historia,
+      user: populatedStory.user,
+      jsonFileName: populatedStory.jsonFileName,
+      column: populatedStory.column,
+      position: populatedStory.position
+    }, null, 2));
+    
+    res.json(populatedStory);
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
