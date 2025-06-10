@@ -1,382 +1,402 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import api from '../services/api';
 import { saveAs } from 'file-saver';
+import * as XLSX from 'xlsx';
+import { FiDownload, FiRefreshCw, FiFileText } from 'react-icons/fi';
+import { FaFileCsv, FaFileExcel } from 'react-icons/fa';
 
 /**
- * Componente para mostrar el alcance del proyecto en un formato amigable
- * sin utilizar terminología específica de metodologías ágiles
+ * Componente para mostrar el alcance del proyecto en un formato de tabla
+ * con opciones de exportación a Excel y CSV
  */
-const ScopeView = ({ columns: propColumns, stories: propStories }) => {
+const ScopeView = ({ columns: propColumns = [], stories: propStories = [] }) => {
   const [columns, setColumns] = useState(propColumns);
   const [stories, setStories] = useState(propStories);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [exporting, setExporting] = useState(false);
-  
-  // Función para recargar los datos
-  // Función para exportar criterios según el estado de finalización
-  const exportCriteria = useCallback((type = 'all') => {
-    setExporting(true);
+
+  // Ordenar columnas por posición y excluir la primera columna (Backlog)
+  const sortedColumns = React.useMemo(() => {
+    return [...columns]
+      .sort((a, b) => (a.position || 0) - (b.position || 0))
+      .filter((_, index) => index > 0);
+  }, [columns]);
+
+  // Agrupar historias por columna
+  const storiesByColumn = React.useMemo(() => {
+    const result = {};
+    
+    // Inicializar con arrays vacíos para cada columna
+    sortedColumns.forEach(column => {
+      if (column._id) result[column._id] = [];
+    });
+    
+    // Asignar historias a sus columnas
+    stories.forEach(story => {
+      if (!story.column) return;
+      const columnId = typeof story.column === 'object' ? story.column._id : story.column;
+      if (result[columnId]) {
+        result[columnId].push(story);
+      }
+    });
+    
+    // Ordenar historias por posición en cada columna
+    Object.values(result).forEach(columnStories => {
+      columnStories.sort((a, b) => (a.position || 0) - (b.position || 0));
+    });
+    
+    return result;
+  }, [stories, sortedColumns]);
+
+  // Función para exportar a Excel
+  const exportToExcel = useCallback(() => {
     try {
-      // Obtener columnas ordenadas (excluyendo la primera columna - Backlog)
-      const sortedCols = [...(Array.isArray(columns) ? columns : [])]
-        .sort((a, b) => (a.position || 0) - (b.position || 0))
-        .filter((_, index) => index > 0);
+      setExporting(true);
       
-      // Crear un mapa de historias por columna
-      const storiesByCol = {};
-      const storiesList = Array.isArray(stories) ? stories : [];
+      // Preparar datos para la hoja de cálculo
+      const data = [
+        ['Columna', 'ID Historia', 'Título', 'Descripción', 'Criterios', 'Estado']
+      ];
       
-      // Inicializar el mapa con arrays vacíos para cada columna
-      sortedCols.forEach(col => {
-        if (col._id) storiesByCol[col._id] = [];
+      // Recorrer cada columna
+      Object.entries(storiesByColumn).forEach(([columnId, columnStories]) => {
+        const column = sortedColumns.find(c => c._id === columnId);
+        if (!column) return;
+        
+        columnStories.forEach(story => {
+          const totalCriteria = story.criteria?.length || 0;
+          const completedCriteria = story.criteria?.filter(c => c.checked).length || 0;
+          const progress = totalCriteria > 0 ? Math.round((completedCriteria / totalCriteria) * 100) : 0;
+          
+          data.push([
+            column.name,
+            story.id_historia || 'N/A',
+            story.title || 'Sin título',
+            story.description || '',
+            `${completedCriteria}/${totalCriteria} (${progress}%)`,
+            story.completedAt ? 'Completada' : 'En progreso'
+          ]);
+        });
       });
       
-      // Asignar historias a sus columnas
-      storiesList.forEach(story => {
-        if (!story.column) return;
-        const colId = typeof story.column === 'object' ? story.column._id : story.column;
-        if (storiesByCol[colId]) storiesByCol[colId].push(story);
-      });
+      // Crear libro de trabajo y hoja de cálculo
+      const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.aoa_to_sheet(data);
       
-      // Ordenar historias por posición en cada columna
-      Object.values(storiesByCol).forEach(colStories => {
-        colStories.sort((a, b) => (a.position || 0) - (b.position || 0));
-      });
+      // Ajustar el ancho de las columnas
+      const wscols = [
+        { wch: 20 }, // Columna
+        { wch: 15 }, // ID Historia
+        { wch: 40 }, // Título
+        { wch: 60 }, // Descripción
+        { wch: 20 }, // Criterios
+        { wch: 15 }  // Estado
+      ];
+      ws['!cols'] = wscols;
       
-      // Construir el contenido CSV
-      let csvLines = [];
-      let hasData = false;
+      // Agregar hoja al libro
+      XLSX.utils.book_append_sheet(wb, ws, 'Alcance');
       
-      // Recorrer cada columna ordenada
-      for (const column of sortedCols) {
-        if (!column._id) continue;
-        
-        const columnStories = storiesByCol[column._id] || [];
-        if (columnStories.length === 0) continue;
-        
-        // Agregar encabezado de columna
-        csvLines.push(`"${column.name}",,,,,`);
-        
-        // Recorrer historias de la columna
-        for (const story of columnStories) {
-          if (!story.criteria || !Array.isArray(story.criteria)) continue;
-          
-          // Filtrar criterios según el tipo
-          const filteredCriteria = story.criteria.filter(criterion => {
-            if (type === 'all') return true;
-            return type === 'completed' ? criterion.checked : !criterion.checked;
-          });
-          
-          if (filteredCriteria.length === 0) continue;
-          
-          hasData = true;
-          
-          // Agregar historia
-          csvLines.push(`"${(story.title || '').replace(/"/g, '""')}","${(story.description || '').replace(/"/g, '""')}",,,`);
-          
-          // Agregar cada criterio
-          for (const criterion of filteredCriteria) {
-            const status = criterion.checked ? 'Completado' : 'Pendiente';
-            const date = criterion.completedAt ? new Date(criterion.completedAt).toLocaleDateString() : 'N/A';
-            csvLines.push(`,,"${(criterion.text || '').replace(/"/g, '""')}","${status}","${date}"`);
-          }
-          
-          // Espacio después de cada historia
-          csvLines.push(',,,,');
-        }
-        
-        // Espacio después de cada columna
-        csvLines.push('');
-      }
-      
-      if (!hasData) {
-        setError(`No hay criterios ${type === 'completed' ? 'completados' : type === 'pending' ? 'pendientes' : ''} para exportar.`);
-        return;
-      }
-      
-      // Agregar encabezados al principio
-      const headers = ['Historia', 'Descripción', 'Criterio', 'Estado', 'Fecha de Completado'];
-      csvLines.unshift(headers.join(','));
-      
-      // Unir todas las líneas del CSV
-      const csvContent = csvLines.join('\n');
-      
-      // Crear y descargar el archivo
-      const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
-      const fileName = `criterios_${type}_${new Date().toISOString().split('T')[0]}.csv`;
-      saveAs(blob, fileName);
+      // Generar archivo y descargar
+      const fileName = `alcance_proyecto_${new Date().toISOString().split('T')[0]}.xlsx`;
+      XLSX.writeFile(wb, fileName);
       
     } catch (err) {
-      console.error('Error al exportar criterios:', err);
-      setError('Error al exportar los criterios. Por favor, inténtalo de nuevo.');
+      console.error('Error al exportar a Excel:', err);
+      setError('Error al exportar a Excel. Por favor, inténtalo de nuevo.');
     } finally {
       setExporting(false);
     }
-  }, [stories, columns]);
+  }, [storiesByColumn, sortedColumns]);
+  
+  // Función para exportar a CSV
+  const exportToCSV = useCallback(() => {
+    try {
+      setExporting(true);
+      
+      let csvContent = 'Columna,ID Historia,Título,Descripción,Criterios,Estado\n';
+      
+      // Recorrer cada columna
+      Object.entries(storiesByColumn).forEach(([columnId, columnStories]) => {
+        const column = sortedColumns.find(c => c._id === columnId);
+        if (!column) return;
+        
+        columnStories.forEach(story => {
+          const totalCriteria = story.criteria?.length || 0;
+          const completedCriteria = story.criteria?.filter(c => c.checked).length || 0;
+          const progress = totalCriteria > 0 ? Math.round((completedCriteria / totalCriteria) * 100) : 0;
+          
+          // Escapar comas y comillas en los textos
+          const escapeCsv = (text) => {
+            if (text === null || text === undefined) return '';
+            return `"${String(text).replace(/"/g, '""')}"`;
+          };
+          
+          csvContent += [
+            escapeCsv(column.name),
+            escapeCsv(story.id_historia || 'N/A'),
+            escapeCsv(story.title || 'Sin título'),
+            escapeCsv(story.description || ''),
+            escapeCsv(`${completedCriteria}/${totalCriteria} (${progress}%)`),
+            escapeCsv(story.completedAt ? 'Completada' : 'En progreso')
+          ].join(',') + '\n';
+        });
+      });
+      
+      // Crear y descargar el archivo
+      const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
+      const fileName = `alcance_proyecto_${new Date().toISOString().split('T')[0]}.csv`;
+      saveAs(blob, fileName);
+      
+    } catch (err) {
+      console.error('Error al exportar a CSV:', err);
+      setError('Error al exportar a CSV. Por favor, inténtalo de nuevo.');
+    } finally {
+      setExporting(false);
+    }
+  }, [storiesByColumn, sortedColumns]);
 
-  const reloadData = async () => {
+  // Manejar recarga de datos
+  const reloadData = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
       
-      // Obtener las columnas y las historias directamente de la API
-      const columnsResponse = await api.getColumns();
-      const storiesResponse = await api.getStories();
+      // Obtener datos actualizados desde la API
+      const [columnsRes, storiesRes] = await Promise.all([
+        api.getColumns(),
+        api.getStories()
+      ]);
       
-      console.log('ScopeView - Datos recargados:', {
-        columns: columnsResponse.data,
-        stories: storiesResponse.data
-      });
+      setColumns(columnsRes.data || []);
+      setStories(storiesRes.data || []);
       
-      // Verificar que hay datos
-      if (!columnsResponse.data || columnsResponse.data.length === 0) {
-        setError('No se encontraron columnas. Por favor, crea algunas columnas en el tablero Kanban.');
-      }
-      
-      if (!storiesResponse.data || storiesResponse.data.length === 0) {
-        setError('No se encontraron historias. Por favor, crea algunas historias en el tablero Kanban.');
-      }
-      
-      // Verificar la estructura de los datos
-      if (storiesResponse.data && storiesResponse.data.length > 0) {
-        const sampleStory = storiesResponse.data[0];
-        console.log('Estructura de una historia de ejemplo:', {
-          id: sampleStory._id,
-          title: sampleStory.title,
-          column: sampleStory.column,
-          columnType: typeof sampleStory.column
-        });
-      }
-      
-      setColumns(columnsResponse.data);
-      setStories(storiesResponse.data);
     } catch (err) {
-      console.error('Error al recargar los datos:', err);
-      setError('Error al recargar los datos. Por favor, inténtalo de nuevo.');
+      console.error('Error al recargar datos:', err);
+      setError('Error al cargar los datos. Por favor, inténtalo de nuevo.');
     } finally {
       setLoading(false);
     }
-  };
-  
-  // Usar los datos de las props cuando cambien
+  }, []);
+
+  // Efecto para cargar datos iniciales si no se proporcionan como props
   useEffect(() => {
-    setColumns(propColumns);
-    setStories(propStories);
-  }, [propColumns, propStories]);
-  console.log('ScopeView - Columnas recibidas:', columns);
-  console.log('ScopeView - Historias recibidas:', stories);
-  
-  // Verificar si hay datos
-  if (!columns || columns.length === 0) {
-    console.warn('No hay columnas disponibles');
+    if (propColumns.length === 0 || propStories.length === 0) {
+      reloadData();
+    }
+  }, [propColumns, propStories, reloadData]);
+
+  // Calcular totales
+  const totalStories = stories.length;
+  const completedStories = stories.filter(s => s.completedAt).length;
+  const completionPercentage = totalStories > 0 
+    ? Math.round((completedStories / totalStories) * 100) 
+    : 0;
+
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center p-8">
+        <FiRefreshCw className="animate-spin text-blue-500 text-2xl mb-2" />
+        <p className="text-slate-600">Cargando datos del alcance...</p>
+      </div>
+    );
   }
-  
-  if (!stories || stories.length === 0) {
-    console.warn('No hay historias disponibles');
-  }
-  
-  // Asegurarse de que columns es un array
-  const columnsArray = Array.isArray(columns) ? columns : [];
-  console.log('ScopeView - Array de columnas:', columnsArray);
-  
-  // Asegurarse de que stories es un array
-  const storiesArray = Array.isArray(stories) ? stories : [];
-  console.log('ScopeView - Array de historias:', storiesArray);
-  
-  // Ordenar las columnas según su posición y excluir la primera columna (Backlog)
-  const sortedColumns = [...columnsArray]
-    .sort((a, b) => (a.position || 0) - (b.position || 0))
-    .filter((column, index) => index > 0); // Excluir la primera columna (Backlog)
-  console.log('ScopeView - Columnas filtradas (sin Backlog):', sortedColumns);
-  
-  // Enfoque alternativo: Crear un mapa de historias por columna
-  const storiesByColumnMap = {};
-  
-  // Inicializar el mapa con arrays vacíos para cada columna
-  sortedColumns.forEach(column => {
-    if (column._id) {
-      storiesByColumnMap[column._id] = [];
-    }
-  });
-  
-  // Asignar cada historia a su columna correspondiente
-  storiesArray.forEach(story => {
-    if (!story.column) {
-      console.warn('Historia sin columna asignada:', story);
-      return;
-    }
-    
-    // Obtener el ID de la columna (puede ser un string o un objeto)
-    const columnId = typeof story.column === 'object' ? story.column._id : story.column;
-    
-    // Verificar si esta columna está en nuestro mapa (es decir, no es la primera columna/backlog)
-    if (storiesByColumnMap[columnId]) {
-      storiesByColumnMap[columnId].push(story);
-      console.log(`Historia '${story.title}' asignada a columna ID: ${columnId}`);
-    }
-  });
-  
-  // Ordenar las historias por posición en cada columna
-  Object.keys(storiesByColumnMap).forEach(columnId => {
-    storiesByColumnMap[columnId].sort((a, b) => (a.position || 0) - (b.position || 0));
-  });
-  
-  // Mostrar resumen de historias por columna
-  sortedColumns.forEach(column => {
-    if (column._id) {
-      const stories = storiesByColumnMap[column._id] || [];
-      console.log(`Columna '${column.name}' (ID: ${column._id}): ${stories.length} historias`);
-    }
-  });
-  
-  // Usar el mapa como nuestro storiesByColumn
-  const storiesByColumn = storiesByColumnMap;
 
   return (
-    <div className="scope-view p-4">
-      <div className="mb-6 flex justify-between items-center">
-        <h2 className="text-xl font-semibold text-slate-700">Alcance del Proyecto</h2>
-        <div className="space-x-2">
-          <button
-            onClick={() => exportCriteria('all')}
-            disabled={exporting}
-            className="px-3 py-1.5 text-xs font-medium bg-blue-50 text-blue-700 rounded hover:bg-blue-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {exporting ? 'Exportando...' : 'Exportar Todo'}
-          </button>
-          <button
-            onClick={() => exportCriteria('completed')}
-            disabled={exporting}
-            className="px-3 py-1.5 text-xs font-medium bg-green-50 text-green-700 rounded hover:bg-green-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {exporting ? 'Exportando...' : 'Exportar Finalizados'}
-          </button>
-          <button
-            onClick={() => exportCriteria('pending')}
-            disabled={exporting}
-            className="px-3 py-1.5 text-xs font-medium bg-yellow-50 text-yellow-700 rounded hover:bg-yellow-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {exporting ? 'Exportando...' : 'Exportar Pendientes'}
-          </button>
+    <div className="p-4">
+      <div className="mb-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <h2 className="text-2xl font-bold text-slate-800">Alcance del Proyecto</h2>
+          <p className="text-slate-500">Vista general de las historias por columna</p>
         </div>
-      </div>
-      
-      {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4">
-          {error}
-        </div>
-      )}
-      
-      
-      {/* Mostrar mensaje si no hay columnas */}
-      {sortedColumns.length === 0 && (
-        <div className="bg-white p-4 rounded-lg shadow-sm mb-6 text-center">
-          <p className="text-slate-600">No hay columnas para mostrar en el alcance del proyecto.</p>
-        </div>
-      )}
-      
-      {/* Mostrar todas las columnas */}
-      {sortedColumns.map(column => {
-        // Verificar que la columna tenga un ID válido
-        if (!column._id) {
-          console.error('Columna sin ID válido:', column);
-          return null;
-        }
-        
-        const columnStories = storiesByColumn[column._id] || [];
-        console.log(`Renderizando columna ${column.name} con ${columnStories.length} historias:`, columnStories);
-        
-        // Mostrar la columna incluso si no tiene historias
-        return (
-          <div key={column._id} className="mb-8">
-            <h3 className="text-lg font-bold text-slate-800 mb-3 border-b pb-2">
-              {column.name}
-            </h3>
-            
-            {columnStories.length === 0 ? (
-              <p className="text-sm text-slate-500 italic">No hay elementos en esta columna.</p>
-            ) : columnStories.map(story => {
-              console.log(`Renderizando historia: ${story.title}`, story);
-              return (
-                <div key={story._id} className="mb-6 bg-white p-4 rounded-lg shadow-sm">
-                  <h4 className="text-md font-semibold text-slate-700 mb-2">
-                    {story.title}
-                  </h4>
-                  
-                  {story.description && (
-                    <p className="text-sm text-slate-600 mb-3">
-                      {story.description}
-                    </p>
-                  )}
-                  
-                  {story.criteria && story.criteria.length > 0 && (
-                    <div className="mt-3">
-                      <h5 className="text-sm font-medium text-slate-700 mb-2">Criterios de Aceptación:</h5>
-                      <ul className="text-xs text-slate-600 list-disc pl-5 space-y-1">
-                        {story.criteria.map((criterion, idx) => (
-                          <li key={idx}>
-                            {criterion.text}
-                            {criterion.checked && criterion.completedAt && (
-                              <span className="ml-2 text-xs text-slate-500">
-                                (Completado: {new Date(criterion.completedAt).toLocaleDateString()})
-                              </span>
-                            )}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                  
-                  {story.priority && (
-                    <div className="mt-3 text-xs text-slate-500">
-                      <span className="font-medium">Prioridad:</span> {story.priority}
-                    </div>
-                  )}
-                  
-                  {story.storyPoints && (
-                    <div className="mt-1 text-xs text-slate-500">
-                      <span className="font-medium">Esfuerzo estimado:</span> {story.storyPoints} puntos
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        );
-      })}
-      
-      {/* Mostrar ejemplo si no hay columnas o si todas las columnas están vacías */}
-      {(sortedColumns.length === 0 || sortedColumns.every(column => (storiesByColumn[column._id] || []).length === 0)) && (
-        <div className="bg-white p-4 rounded-lg shadow-sm mb-6">
-          <h3 className="text-lg font-bold text-slate-800 mb-3 border-b pb-2">
-            Ejemplo: Desarrollo
-          </h3>
-          <div className="mb-6 bg-white p-4 rounded-lg shadow-sm border border-slate-100">
-            <h4 className="text-md font-semibold text-slate-700 mb-2">
-              Implementar funcionalidad de inicio de sesión
-            </h4>
-            <p className="text-sm text-slate-600 mb-3">
-              Los usuarios deben poder iniciar sesión en la aplicación utilizando su correo electrónico y contraseña.
-            </p>
-            <div className="mt-3">
-              <h5 className="text-sm font-medium text-slate-700 mb-2">Criterios de Aceptación:</h5>
-              <ul className="text-xs text-slate-600 list-disc pl-5 space-y-1">
-                <li>El formulario debe validar el formato del correo electrónico</li>
-                <li>La contraseña debe tener al menos 8 caracteres</li>
-                <li>Debe mostrarse un mensaje de error si las credenciales son incorrectas</li>
-              </ul>
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={reloadData}
+            disabled={exporting || loading}
+            className="inline-flex items-center px-3 py-2 border border-slate-300 rounded-md shadow-sm text-sm font-medium text-slate-700 bg-white hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+          >
+            <FiRefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+            Actualizar
+          </button>
+          <div className="relative inline-block group">
+            <button
+              disabled={exporting || loading}
+              className="inline-flex items-center px-3 py-2 border border-slate-300 rounded-md shadow-sm text-sm font-medium text-slate-700 bg-white hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+            >
+              <FiDownload className="mr-2 h-4 w-4" />
+              Exportar
+            </button>
+            <div className="absolute right-0 mt-1 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10">
+              <div className="py-1">
+                <button
+                  onClick={exportToCSV}
+                  disabled={exporting || loading}
+                  className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 flex items-center"
+                >
+                  <FaFileCsv className="mr-2 text-green-600" />
+                  Exportar a CSV
+                </button>
+                <button
+                  onClick={exportToExcel}
+                  disabled={exporting || loading}
+                  className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 flex items-center"
+                >
+                  <FaFileExcel className="mr-2 text-green-700" />
+                  Exportar a Excel
+                </button>
+              </div>
             </div>
           </div>
-          <p className="text-xs text-slate-500 italic">Este es un ejemplo de cómo se verá el contenido cuando agregues columnas e historias a tu proyecto.</p>
+        </div>
+      </div>
+
+      {error && (
+        <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded">
+          {error}
+          <button 
+            onClick={() => setError(null)}
+            className="float-right font-bold text-red-800"
+          >
+            ×
+          </button>
         </div>
       )}
-      
-      {sortedColumns.length > 0 && sortedColumns.every(column => (storiesByColumn[column._id] || []).length === 0) && (
-        <div className="text-center py-8 text-slate-500">
-          No hay elementos para mostrar en el alcance del proyecto.
+
+      {/* Tarjetas de resumen */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div className="bg-white p-4 rounded-lg shadow">
+          <h3 className="text-sm font-medium text-slate-500">Total de Historias</h3>
+          <p className="mt-1 text-2xl font-semibold text-slate-900">
+            {totalStories}
+          </p>
         </div>
-      )}
+        <div className="bg-white p-4 rounded-lg shadow">
+          <h3 className="text-sm font-medium text-slate-500">Historias Completadas</h3>
+          <p className="mt-1 text-2xl font-semibold text-green-600">
+            {completedStories}
+          </p>
+        </div>
+        <div className="bg-white p-4 rounded-lg shadow">
+          <h3 className="text-sm font-medium text-slate-500">Progreso General</h3>
+          <div className="mt-1">
+            <div className="w-full bg-slate-200 rounded-full h-2.5">
+              <div 
+                className="bg-blue-600 h-2.5 rounded-full" 
+                style={{ width: `${completionPercentage}%` }}
+              />
+            </div>
+            <p className="mt-1 text-sm text-slate-700">
+              {totalStories > 0 
+                ? `${completionPercentage}% completado`
+                : 'No hay historias'}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Tabla de historias */}
+      <div className="bg-white shadow overflow-hidden rounded-lg">
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-slate-200">
+            <thead className="bg-slate-50">
+              <tr>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                  Columna
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                  ID Historia
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                  Título
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                  Descripción
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                  Criterios
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                  Estado
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-slate-200">
+              {sortedColumns.length === 0 ? (
+                <tr>
+                  <td colSpan="6" className="px-6 py-4 text-center text-sm text-slate-500">
+                    No hay columnas disponibles. Crea columnas en el tablero Kanban para ver el alcance.
+                  </td>
+                </tr>
+              ) : (
+                Object.entries(storiesByColumn).map(([columnId, columnStories]) => {
+                  const column = sortedColumns.find(c => c._id === columnId);
+                  if (!column) return null;
+                  
+                  return columnStories.length === 0 ? (
+                    <tr key={`empty-${columnId}`}>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">
+                        {column.name}
+                      </td>
+                      <td colSpan="5" className="px-6 py-4 text-sm text-slate-500">
+                        No hay historias en esta columna
+                      </td>
+                    </tr>
+                  ) : (
+                    columnStories.map((story, index) => {
+                      const totalCriteria = story.criteria?.length || 0;
+                      const completedCriteria = story.criteria?.filter(c => c.checked).length || 0;
+                      const progress = totalCriteria > 0 ? Math.round((completedCriteria / totalCriteria) * 100) : 0;
+                      
+                      return (
+                        <tr key={story._id} className={index % 2 === 0 ? 'bg-white' : 'bg-slate-50'}>
+                          {index === 0 && (
+                            <td 
+                              rowSpan={columnStories.length} 
+                              className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900 border-r border-slate-200"
+                            >
+                              {column.name}
+                            </td>
+                          )}
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500 font-mono">
+                            {story.id_historia || 'N/A'}
+                          </td>
+                          <td className="px-6 py-4 text-sm font-medium text-slate-900 max-w-xs truncate">
+                            {story.title || 'Sin título'}
+                          </td>
+                          <td className="px-6 py-4 text-sm text-slate-500 max-w-md truncate">
+                            {story.description || 'Sin descripción'}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="flex items-center">
+                              <div className="w-24 bg-slate-200 rounded-full h-2.5 mr-2">
+                                <div 
+                                  className="bg-green-600 h-2.5 rounded-full" 
+                                  style={{ width: `${progress}%` }}
+                                />
+                              </div>
+                              <span className="text-xs font-medium text-slate-700">
+                                {completedCriteria}/{totalCriteria} ({progress}%)
+                              </span>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                              story.completedAt ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'
+                            }`}>
+                              {story.completedAt ? 'Completada' : 'En progreso'}
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   );
 };
