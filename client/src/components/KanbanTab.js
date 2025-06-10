@@ -14,6 +14,7 @@ import SimpleKanban from './SimpleKanban';
  * @param {Function} props.onCriterionCheck - Function to handle criterion check
  * @param {Function} props.onCriterionDelete - Function to handle criterion deletion
  * @param {Function} props.onCriteriaReorder - Function to handle criteria reordering
+ * @param {Function} props.onDeleteStory - Function to handle story deletion
  * @param {String} props.currentJsonFile - Current JSON file name
  */
 const KanbanTab = ({ 
@@ -25,6 +26,7 @@ const KanbanTab = ({
   onCriterionCheck,
   onCriterionDelete,
   onCriteriaReorder,
+  onDeleteStory,
   currentJsonFile 
 }) => {
   return (
@@ -50,6 +52,7 @@ const KanbanTab = ({
         onCriterionCheck={onCriterionCheck}
         onCriterionDelete={onCriterionDelete}
         onCriteriaReorder={onCriteriaReorder}
+        onDeleteStory={onDeleteStory}
       />
       
       {columns.length === 0 && (

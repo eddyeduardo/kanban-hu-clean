@@ -14,6 +14,7 @@ import { FiChevronDown, FiChevronUp } from 'react-icons/fi';
  * @param {boolean} props.draggable - Indica si la tarjeta es arrastrable
  * @param {Function} props.onDragStart - Función para manejar el inicio del arrastre
  * @param {Function} props.onDragEnd - Función para manejar el fin del arrastre
+ * @param {Function} props.onDelete - Función para manejar la eliminación de la historia
  */
 const StoryCard = ({ 
   story, 
@@ -23,6 +24,7 @@ const StoryCard = ({
   onCriteriaReorder,
   onDragStart,
   onDragEnd,
+  onDelete,
   index
 }) => {
   // Efecto para mostrar los datos de la historia en la consola
@@ -161,15 +163,31 @@ const StoryCard = ({
         <span>
           {story.criteria ? story.criteria.filter(c => c.checked).length : 0} / {story.criteria?.length || 0} criterios
         </span>
-        <button 
-          onClick={(e) => {
-            e.stopPropagation();
-            onEdit(story);
-          }}
-          className="text-blue-600 hover:text-blue-800"
-        >
-          Editar
-        </button>
+        <div className="flex space-x-2">
+          <button 
+            onClick={(e) => {
+              e.stopPropagation();
+              if (window.confirm('¿Estás seguro de que deseas eliminar esta historia?')) {
+                onDelete(story._id);
+              }
+            }}
+            className="text-red-600 hover:text-red-800 hover:underline"
+            title="Eliminar historia"
+          >
+            Borrar
+          </button>
+          <span>|</span>
+          <button 
+            onClick={(e) => {
+              e.stopPropagation();
+              onEdit(story);
+            }}
+            className="text-blue-600 hover:text-blue-800 hover:underline"
+            title="Editar historia"
+          >
+            Editar
+          </button>
+        </div>
       </div>
     </div>
   );

@@ -15,6 +15,7 @@ import StoryCard from './StoryCard';
  * @param {Function} props.onDragOver - Function to handle drag over event
  * @param {Function} props.onDragStart - Function to handle drag start
  * @param {Function} props.onDragEnd - Function to handle drag end
+ * @param {Function} props.onDelete - Function to handle story deletion
  */
 const KanbanColumn = ({ 
   column, 
@@ -26,7 +27,8 @@ const KanbanColumn = ({
   onDrop,
   onDragOver,
   onDragStart,
-  onDragEnd
+  onDragEnd,
+  onDelete
 }) => {
   // No necesitamos manejar el arrastre aquí, ya que ahora lo maneja DraggableColumn
 
@@ -84,6 +86,7 @@ const KanbanColumn = ({
             onCriteriaReorder={onCriteriaReorder}
             onDragStart={onDragStart}
             onDragEnd={onDragEnd}
+            onDelete={onDelete}
           />
         ))}
       </div>

@@ -89,7 +89,8 @@ const SimpleKanban = ({
   onCriterionCheck, 
   onCriterionDelete, 
   onCriteriaReorder,
-  onColumnMove
+  onColumnMove,
+  onDeleteStory
 }) => {
   const [columns, setColumns] = useState(propColumns);
   
@@ -292,6 +293,16 @@ const SimpleKanban = ({
     }
     setDraggedStory(null);
   };
+  
+  // Manejar la eliminación de una historia
+  const handleDeleteStory = async (storyId) => {
+    try {
+      await onDeleteStory(storyId);
+      console.log(`Historia ${storyId} eliminada correctamente`);
+    } catch (error) {
+      console.error('Error al eliminar la historia:', error);
+    }
+  };
 
   return (
     <div className="mb-8 flex overflow-x-auto pb-4" style={{ minHeight: '100%' }}>
@@ -317,6 +328,7 @@ const SimpleKanban = ({
                 onDragOver={handleDragOver}
                 onDragStart={handleDragStart}
                 onDragEnd={handleDragEnd}
+                onDelete={handleDeleteStory}
               />
             </div>
           </DraggableColumn>

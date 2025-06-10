@@ -298,6 +298,26 @@ function App() {
     setModalOpen(true);
   };
 
+  // Handler para eliminar una historia
+  const handleDeleteStory = async (storyId) => {
+    try {
+      console.log(`Eliminando historia con ID: ${storyId}`);
+      
+      // Llamar a la API para eliminar la historia
+      await api.deleteStory(storyId);
+      
+      // Actualizar el estado local eliminando la historia
+      setStories(stories.filter(story => story._id !== storyId));
+      
+      console.log(`Historia ${storyId} eliminada correctamente`);
+      return true;
+    } catch (err) {
+      console.error('Error al eliminar la historia:', err);
+      setError('Error al eliminar la historia: ' + (err.response?.data?.message || err.message));
+      return false;
+    }
+  };
+
   // Handler for saving a story
   const handleSaveStory = async (storyData) => {
     try {
@@ -582,6 +602,7 @@ function App() {
                   onCriterionCheck={handleCriterionCheck}
                   onCriterionDelete={handleCriterionDelete}
                   onCriteriaReorder={handleCriteriaReorder}
+                  onDeleteStory={handleDeleteStory}
                   currentJsonFile={currentJsonFile}
                 />
               ),
