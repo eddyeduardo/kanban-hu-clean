@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import StoryCard from './StoryCard';
+import { sortStoriesWithCompletedLast } from '../utils/storyUtils';
 
 /**
  * KanbanColumn component represents a single column in the Kanban board
@@ -51,6 +52,11 @@ const KanbanColumn = ({
     }
   };
 
+  // Sort stories with completed ones at the end
+  const sortedStories = useMemo(() => {
+    return sortStoriesWithCompletedLast(stories);
+  }, [stories]);
+
   return (
     <div 
       className="kanban-column bg-slate-200 p-3 rounded-lg shadow flex-shrink-0" 
@@ -75,7 +81,7 @@ const KanbanColumn = ({
       </div>
       
       <div className="kanban-column-content space-y-3 min-h-[50px]">
-        {stories.map((story, index) => (
+        {sortedStories.map((story, index) => (
           <StoryCard 
             key={story._id}
             story={story}

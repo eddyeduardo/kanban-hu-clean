@@ -376,7 +376,7 @@ const ScopeView = ({ columns: propColumns = [], stories: propStories = [] }) => 
                                 />
                               </div>
                               <span className="text-xs font-medium text-slate-700">
-                                {completedCriteria}/{totalCriteria} ({progress}%)
+                                {completedCriteria}/{totalCriteria}  - {progress}%
                               </span>
                             </div>
                           </td>

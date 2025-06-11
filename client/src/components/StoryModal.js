@@ -83,10 +83,10 @@ const StoryModal = ({ isOpen, onClose, onSave, story, currentJsonFile }) => {
       return;
     }
     
-    // Validar formato del ID de historia (HU-XXXXX-###)
-    const idHistoriaRegex = /^HU-[A-Z0-9]{5}-\d{3}$/;
+    // Validar formato del ID de historia (HU-XX-### a HU-XXXXX-###)
+    const idHistoriaRegex = /^HU-[A-Z0-9]{2,5}-\d{3}$/;
     if (idHistoria && !idHistoriaRegex.test(idHistoria)) {
-      alert('El ID de historia debe tener el formato: HU-XXXXX-001 (donde X son letras/números y 001 es el número de historia)');
+      alert('El ID de historia debe tener el formato: HU-XX...-001 (donde XX... son de 2 a 5 letras/números y 001 es el número de historia)\nEjemplos: HU-AB-001, HU-ABC-001, HU-ABCD-001, HU-ABCDE-001');
       return;
     }
     
@@ -145,21 +145,27 @@ const StoryModal = ({ isOpen, onClose, onSave, story, currentJsonFile }) => {
                   value={idHistoria}
                   onChange={(e) => {
                     // Permitir solo mayúsculas, números y guiones
+                    // Validación más flexible durante la edición
                     const value = e.target.value.toUpperCase();
-                    if (/^HU-[A-Z0-9]{0,5}(-\d{0,3})?$/.test(value) || value === '') {
+                    if (
+                      value === '' || 
+                      /^HU-[A-Z0-9]{0,5}(-\d{0,3})?$/.test(value) || 
+                      /^HU-[A-Z0-9]{2,5}-\d{0,3}$/.test(value) ||
+                      /^HU-[A-Z0-9]{0,5}-?\d{0,3}$/.test(value)
+                    ) {
                       setIdHistoria(value);
                     }
                   }}
                   className="w-full p-2 border border-slate-300 rounded-md font-mono"
-                  placeholder="Ej: HU-ABC12-001"
+                  placeholder="Ej: HU-AB-001 o HU-ABCDE-001"
                   required
                 />
                 <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                  <span className="text-slate-400 text-xs">HU-XXXXX-###</span>
+                  <span className="text-slate-400 text-xs">HU-XX...-###</span>
                 </div>
               </div>
               <p className="mt-1 text-xs text-slate-500">
-                Formato: HU-{currentJsonFile ? `${currentJsonFile.substring(0, 5).toUpperCase()}` : 'XXXXX'}-001
+                Formato: HU-{currentJsonFile ? `${currentJsonFile.substring(0, 5).toUpperCase()}` : 'XX...'}-001 (2-5 caracteres)
               </p>
             </div>
             

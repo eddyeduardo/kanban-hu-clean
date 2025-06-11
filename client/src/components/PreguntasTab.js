@@ -1,9 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import api from '../services/api';
-import { saveAs } from 'file-saver';
-import * as XLSX from 'xlsx';
-import { FiDownload, FiFileText, FiFile, FiSave } from 'react-icons/fi';
-import { FaFileCsv, FaFileExcel } from 'react-icons/fa';
 
 /**
  * Componente para mostrar preguntas y permitir respuestas
@@ -17,7 +13,6 @@ const PreguntasTab = ({ preguntas = [], currentJsonFile }) => {
   const [error, setError] = useState('');
   const [respuestas, setRespuestas] = useState({});
   const [respuestasGuardadas, setRespuestasGuardadas] = useState({});
-  const [exporting, setExporting] = useState(false);
 
   // Inicializar respuestas cuando cambian las preguntas
   useEffect(() => {
@@ -76,90 +71,6 @@ const PreguntasTab = ({ preguntas = [], currentJsonFile }) => {
     }
   };
 
-  // Exportar a Excel
-  const exportToExcel = useCallback(() => {
-    try {
-      setExporting(true);
-      
-      // Preparar datos para la hoja de cálculo
-      const data = [
-        ['#', 'Pregunta', 'Respuesta', 'Fecha de Respuesta']
-      ];
-      
-      // Agregar cada pregunta y su respuesta
-      preguntas.forEach((pregunta, index) => {
-        data.push([
-          index + 1,
-          pregunta,
-          respuestas[index] || 'Sin responder',
-          respuestas[index] ? new Date().toLocaleString() : 'N/A'
-        ]);
-      });
-      
-      // Crear libro de trabajo y hoja de cálculo
-      const wb = XLSX.utils.book_new();
-      const ws = XLSX.utils.aoa_to_sheet(data);
-      
-      // Ajustar el ancho de las columnas
-      const wscols = [
-        { wch: 5 },   // #
-        { wch: 80 },  // Pregunta
-        { wch: 80 },  // Respuesta
-        { wch: 25 }   // Fecha
-      ];
-      ws['!cols'] = wscols;
-      
-      // Agregar hoja al libro
-      XLSX.utils.book_append_sheet(wb, ws, 'Preguntas');
-      
-      // Generar archivo y descargar
-      const fileName = `preguntas_${currentJsonFile || 'export'}_${new Date().toISOString().split('T')[0]}.xlsx`;
-      XLSX.writeFile(wb, fileName);
-      
-    } catch (err) {
-      console.error('Error al exportar a Excel:', err);
-      setError('Error al exportar a Excel. Por favor, inténtalo de nuevo.');
-    } finally {
-      setExporting(false);
-    }
-  }, [preguntas, respuestas, currentJsonFile]);
-  
-  // Exportar a CSV
-  const exportToCSV = useCallback(() => {
-    try {
-      setExporting(true);
-      
-      let csvContent = 'Número,Pregunta,Respuesta,Fecha de Respuesta\n';
-      
-      // Agregar cada pregunta y su respuesta
-      preguntas.forEach((pregunta, index) => {
-        // Escapar comas y comillas en los textos
-        const escapeCsv = (text) => {
-          if (text === null || text === undefined) return '';
-          return `"${String(text).replace(/"/g, '""')}"`;
-        };
-        
-        csvContent += [
-          index + 1,
-          escapeCsv(pregunta),
-          escapeCsv(respuestas[index] || 'Sin responder'),
-          escapeCsv(respuestas[index] ? new Date().toLocaleString() : 'N/A')
-        ].join(',') + '\n';
-      });
-      
-      // Crear y descargar el archivo
-      const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
-      const fileName = `preguntas_${currentJsonFile || 'export'}_${new Date().toISOString().split('T')[0]}.csv`;
-      saveAs(blob, fileName);
-      
-    } catch (err) {
-      console.error('Error al exportar a CSV:', err);
-      setError('Error al exportar a CSV. Por favor, inténtalo de nuevo.');
-    } finally {
-      setExporting(false);
-    }
-  }, [preguntas, respuestas, currentJsonFile]);
-
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center h-64">
@@ -180,45 +91,13 @@ const PreguntasTab = ({ preguntas = [], currentJsonFile }) => {
 
   return (
     <div className="p-4">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-        <div>
-          <h2 className="text-xl font-semibold text-slate-800">Preguntas para Aclarar</h2>
-          {currentJsonFile && (
-            <p className="text-sm text-slate-500 mt-1">Archivo: {currentJsonFile}</p>
-          )}
-        </div>
-        
-        <div className="flex flex-wrap gap-2">
-          <div className="relative inline-block group">
-            <button
-              disabled={exporting || preguntas.length === 0}
-              className="inline-flex items-center px-4 py-2 border border-slate-300 rounded-md shadow-sm text-sm font-medium text-slate-700 bg-white hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <FiDownload className="mr-2 h-4 w-4" />
-              Exportar
-            </button>
-            <div className="absolute right-0 mt-1 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10">
-              <div className="py-1">
-                <button
-                  onClick={exportToCSV}
-                  disabled={exporting || preguntas.length === 0}
-                  className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 flex items-center"
-                >
-                  <FaFileCsv className="mr-2 text-green-600" />
-                  Exportar a CSV
-                </button>
-                <button
-                  onClick={exportToExcel}
-                  disabled={exporting || preguntas.length === 0}
-                  className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 flex items-center"
-                >
-                  <FaFileExcel className="mr-2 text-green-700" />
-                  Exportar a Excel
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-xl font-semibold text-slate-800">Preguntas para Aclarar</h2>
+        {currentJsonFile && (
+          <span className="px-3 py-1 bg-blue-100 text-blue-800 text-sm font-medium rounded-full">
+            Archivo: {currentJsonFile}
+          </span>
+        )}
       </div>
       
       {!preguntas || preguntas.length === 0 ? (

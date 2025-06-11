@@ -238,8 +238,8 @@ const Dashboard = ({ stories, columns, currentJsonFile, startDate, endDate }) =>
       
       // 1. Intentar extraer de id_historia si existe
       if (story.id_historia) {
-        // Formato: HU-XXXX-XXX donde XXXX es el código del cliente
-        const match = story.id_historia.match(/^HU-([A-Za-z]+)-/);
+        // Formato: HU-XX...-XXX donde XX... son 2-5 caracteres alfanuméricos del código del cliente
+        const match = story.id_historia.match(/^HU-([A-Za-z0-9]{2,5})-/i);
         if (match && match[1]) {
           clientId = match[1]; // Usar directamente el código del cliente (ej: 'CHIL')
         }
