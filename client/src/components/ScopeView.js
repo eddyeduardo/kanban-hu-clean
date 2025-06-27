@@ -1,9 +1,11 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import api from '../services/api';
 import { saveAs } from 'file-saver';
 import * as XLSX from 'xlsx';
+import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import { FiDownload, FiRefreshCw, FiFileText } from 'react-icons/fi';
-import { FaFileCsv, FaFileExcel } from 'react-icons/fa';
+import { FaFileCsv, FaFileExcel, FaFilePdf } from 'react-icons/fa';
 
 /**
  * Componente para mostrar el alcance del proyecto en un formato de tabla
@@ -15,6 +17,11 @@ const ScopeView = ({ columns: propColumns = [], stories: propStories = [] }) => 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [exporting, setExporting] = useState(false);
+  
+  // Variables para el resumen
+  const [totalStories, setTotalStories] = useState(0);
+  const [completedStories, setCompletedStories] = useState(0);
+  const [completionPercentage, setCompletionPercentage] = useState(0);
 
   // Ordenar columnas por posición y excluir la primera columna (Backlog)
   const sortedColumns = React.useMemo(() => {
@@ -56,7 +63,7 @@ const ScopeView = ({ columns: propColumns = [], stories: propStories = [] }) => 
       
       // Preparar datos para la hoja de cálculo
       const data = [
-        ['Columna', 'ID Historia', 'Título', 'Descripción', 'Criterios', 'Estado']
+        ['Columna', 'ID Historia', 'Título', 'Descripción', 'Criterios', 'Estado', 'Fecha de Finalización']
       ];
       
       // Recorrer cada columna
@@ -68,6 +75,7 @@ const ScopeView = ({ columns: propColumns = [], stories: propStories = [] }) => 
           const totalCriteria = story.criteria?.length || 0;
           const completedCriteria = story.criteria?.filter(c => c.checked).length || 0;
           const progress = totalCriteria > 0 ? Math.round((completedCriteria / totalCriteria) * 100) : 0;
+          const completionDate = story.completedAt ? new Date(story.completedAt).toLocaleDateString() : '';
           
           data.push([
             column.name,
@@ -75,7 +83,8 @@ const ScopeView = ({ columns: propColumns = [], stories: propStories = [] }) => 
             story.title || 'Sin título',
             story.description || '',
             `${completedCriteria}/${totalCriteria} (${progress}%)`,
-            story.completedAt ? 'Completada' : 'En progreso'
+            story.completedAt ? 'Completada' : 'En progreso',
+            completionDate
           ]);
         });
       });
@@ -84,6 +93,27 @@ const ScopeView = ({ columns: propColumns = [], stories: propStories = [] }) => 
       const wb = XLSX.utils.book_new();
       const ws = XLSX.utils.aoa_to_sheet(data);
       
+      // Aplicar estilos a la cabecera
+      const headerStyle = {
+        font: { bold: true, color: { rgb: 'FFFFFF' } },
+        fill: { fgColor: { rgb: '4F46E5' } }, // Color azul
+        alignment: { horizontal: 'center' },
+        border: {
+          top: { style: 'thin' },
+          bottom: { style: 'thin' },
+          left: { style: 'thin' },
+          right: { style: 'thin' }
+        }
+      };
+      
+      // Aplicar estilos a las celdas
+      const range = XLSX.utils.decode_range(ws['!ref']);
+      for (let C = range.s.c; C <= range.e.c; ++C) {
+        const headerCell = XLSX.utils.encode_cell({ r: 0, c: C });
+        if (!ws[headerCell]) continue;
+        ws[headerCell].s = headerStyle;
+      }
+      
       // Ajustar el ancho de las columnas
       const wscols = [
         { wch: 20 }, // Columna
@@ -91,7 +121,8 @@ const ScopeView = ({ columns: propColumns = [], stories: propStories = [] }) => 
         { wch: 40 }, // Título
         { wch: 60 }, // Descripción
         { wch: 20 }, // Criterios
-        { wch: 15 }  // Estado
+        { wch: 15 }, // Estado
+        { wch: 20 }  // Fecha de Finalización
       ];
       ws['!cols'] = wscols;
       
@@ -100,7 +131,7 @@ const ScopeView = ({ columns: propColumns = [], stories: propStories = [] }) => 
       
       // Generar archivo y descargar
       const fileName = `alcance_proyecto_${new Date().toISOString().split('T')[0]}.xlsx`;
-      XLSX.writeFile(wb, fileName);
+      XLSX.writeFile(wb, fileName, { bookType: 'xlsx', bookSST: false, type: 'binary' });
       
     } catch (err) {
       console.error('Error al exportar a Excel:', err);
@@ -109,6 +140,153 @@ const ScopeView = ({ columns: propColumns = [], stories: propStories = [] }) => 
       setExporting(false);
     }
   }, [storiesByColumn, sortedColumns]);
+  
+  // Función para exportar a PDF
+  const exportToPDF = useCallback(() => {
+    try {
+      console.log('Iniciando exportación a PDF...');
+      console.log('Total de historias:', stories.length);
+      
+      // Calcular valores actuales
+      const currentTotal = stories.length;
+      const currentCompleted = stories.filter(s => s.completedAt).length;
+      const currentPercentage = currentTotal > 0 
+        ? Math.round((currentCompleted / currentTotal) * 100) 
+        : 0;
+        
+      console.log('Datos calculados:', { currentTotal, currentCompleted, currentPercentage });
+      setExporting(true);
+      
+      // Crear un nuevo documento PDF
+      const doc = new jsPDF({
+        orientation: 'landscape',
+        unit: 'mm',
+        format: 'a4'
+      });
+      
+      // Título del documento
+      const title = 'Alcance del Proyecto';
+      const date = new Date().toLocaleDateString();
+      
+      // Configuración de la tabla
+      const columns = [
+        { header: 'Columna', dataKey: 'column' },
+        { header: 'ID Historia', dataKey: 'id' },
+        { header: 'Título', dataKey: 'title' },
+        { header: 'Descripción', dataKey: 'description' },
+        { header: 'Criterios', dataKey: 'criteria' },
+        { header: 'Estado', dataKey: 'status' },
+        { header: 'Fecha Finalización', dataKey: 'completionDate' }
+      ];
+      
+      // Preparar datos para la tabla
+      const tableData = [];
+      
+      // Recorrer cada columna
+      Object.entries(storiesByColumn).forEach(([columnId, columnStories]) => {
+        const column = sortedColumns.find(c => c._id === columnId);
+        if (!column) return;
+        
+        columnStories.forEach(story => {
+          const totalCriteria = story.criteria?.length || 0;
+          const completedCriteria = story.criteria?.filter(c => c.checked).length || 0;
+          const progress = totalCriteria > 0 ? Math.round((completedCriteria / totalCriteria) * 100) : 0;
+          const completionDate = story.completedAt ? new Date(story.completedAt).toLocaleDateString() : '';
+          
+          tableData.push({
+            column: column.name,
+            id: story.id_historia || 'N/A',
+            title: story.title || 'Sin título',
+            description: story.description || '',
+            criteria: `${completedCriteria}/${totalCriteria} (${progress}%)`,
+            status: story.completedAt ? 'Completada' : 'En progreso',
+            completionDate: completionDate
+          });
+        });
+      });
+      
+      // Agregar título y fecha
+      doc.setFontSize(18);
+      doc.text(title, 14, 20);
+      doc.setFontSize(10);
+      doc.setTextColor(100);
+      doc.text(`Generado el: ${date}`, 14, 27);
+      
+      // Agregar resumen
+      doc.setFontSize(11);
+      doc.setTextColor(0, 0, 0);
+      doc.text(`Total de historias: ${currentTotal}`, 14, 35);
+      doc.text(`Historias completadas: ${currentCompleted} (${currentPercentage}%)`, 14, 40);
+      
+      // Agregar tabla
+      autoTable(doc, {
+        head: [columns.map(col => col.header)],
+        body: tableData.map(row => columns.map(col => row[col.dataKey])),
+        startY: 50,
+        headStyles: {
+          fillColor: [79, 70, 229], // Color azul
+          textColor: 255,
+          fontStyle: 'bold',
+          halign: 'center'
+        },
+        alternateRowStyles: {
+          fillColor: [245, 245, 245]
+        },
+        margin: { top: 10 },
+        styles: {
+          cellPadding: 3,
+          fontSize: 9,
+          valign: 'middle',
+          overflow: 'linebreak',
+          cellWidth: 'wrap'
+        },
+        columnStyles: {
+          0: { cellWidth: 25 }, // Columna
+          1: { cellWidth: 20 }, // ID Historia
+          2: { cellWidth: 35 }, // Título
+          3: { cellWidth: 60 }, // Descripción
+          4: { cellWidth: 20 }, // Criterios
+          5: { cellWidth: 20 }, // Estado
+          6: { cellWidth: 25 }  // Fecha Finalización
+        },
+        didDrawPage: function(data) {
+          // Pie de página
+          const pageSize = doc.internal.pageSize;
+          const pageHeight = pageSize.height ? pageSize.height : pageSize.getHeight();
+          doc.text(`Página ${data.pageNumber}`, data.settings.margin.left, pageHeight - 10);
+        }
+      });
+      
+      // Agregar número de páginas
+      const pageCount = doc.internal.getNumberOfPages();
+      for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        doc.setFontSize(10);
+        doc.setTextColor(150);
+        doc.text(
+          `Página ${i} de ${pageCount}`,
+          doc.internal.pageSize.width - 30,
+          doc.internal.pageSize.height - 10
+        );
+      }
+      
+      // Guardar el PDF
+      const fileName = `alcance_proyecto_${new Date().toISOString().split('T')[0]}.pdf`;
+      doc.save(fileName);
+      
+    } catch (err) {
+      console.error('Error al exportar a PDF:', err);
+      console.error('Stack trace:', err.stack);
+      console.error('Error details:', {
+        message: err.message,
+        name: err.name,
+        constructor: err.constructor.name
+      });
+      setError(`Error al exportar a PDF: ${err.message}. Por favor, inténtalo de nuevo.`);
+    } finally {
+      setExporting(false);
+    }
+  }, [storiesByColumn, sortedColumns, stories, setError, setExporting]);
   
   // Función para exportar a CSV
   const exportToCSV = useCallback(() => {
@@ -188,11 +366,15 @@ const ScopeView = ({ columns: propColumns = [], stories: propStories = [] }) => 
   }, [propColumns, propStories, reloadData]);
 
   // Calcular totales
-  const totalStories = stories.length;
-  const completedStories = stories.filter(s => s.completedAt).length;
-  const completionPercentage = totalStories > 0 
-    ? Math.round((completedStories / totalStories) * 100) 
-    : 0;
+  useEffect(() => {
+    const total = stories.length;
+    const completed = stories.filter(s => s.completedAt).length;
+    const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
+    
+    setTotalStories(total);
+    setCompletedStories(completed);
+    setCompletionPercentage(percentage);
+  }, [stories]);
 
   if (loading) {
     return (
@@ -244,6 +426,14 @@ const ScopeView = ({ columns: propColumns = [], stories: propStories = [] }) => 
                 >
                   <FaFileExcel className="mr-2 text-green-700" />
                   Exportar a Excel
+                </button>
+                <button
+                  onClick={exportToPDF}
+                  disabled={exporting || loading}
+                  className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 flex items-center"
+                >
+                  <FaFilePdf className="mr-2 text-red-600" />
+                  Exportar a PDF
                 </button>
               </div>
             </div>
