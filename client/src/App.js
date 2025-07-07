@@ -191,8 +191,36 @@ function App() {
   };
 
   // Handler for loading stories from an existing JSON file
-  const handleLoadJsonFile = async (fileName) => {
+  const handleLoadJsonFile = async (event) => {
     try {
+      // Verificar si el evento es válido
+      if (!event || typeof event !== 'object') {
+        console.log('Evento no válido:', event);
+        return;
+      }
+      
+      // Obtener el nombre del archivo de manera segura
+      const fileName = event?.target?.value;
+      
+      // Verificar si es una notificación de eliminación
+      const isDeletionEvent = event?.target?.dataset?.deleted === 'true';
+      
+      // Si es una notificación de eliminación, limpiar el estado
+      if (isDeletionEvent) {
+        console.log('Archivo eliminado, limpiando estado');
+        setCurrentJsonFile(null);
+        setColumns([]);
+        setStories([]);
+        setPreguntas([]);
+        return;
+      }
+      
+      // Si no hay nombre de archivo, no hacer nada
+      if (!fileName) {
+        console.log('No se proporcionó nombre de archivo');
+        return;
+      }
+      
       setLoading(true);
       
       // Cargar las historias y columnas del archivo seleccionado
@@ -209,6 +237,7 @@ function App() {
       
       // Actualizar las historias con las del archivo seleccionado
       setStories(response.data.stories);
+      setCurrentJsonFile(fileName);
       
       // Cargar las preguntas asociadas a este archivo JSON
       try {
@@ -225,15 +254,12 @@ function App() {
         setPreguntas([]);
       }
       
-      // Guardar el nombre del archivo actual en el estado
-      setCurrentJsonFile(fileName);
-      
       // Cargar la configuración del proyecto (fechas para el Burn Down Chart)
       try {
         const configResponse = await api.getProjectConfig(fileName);
         if (configResponse.data) {
-          setChartStartDate(new Date(configResponse.data.chartStartDate));
-          setChartEndDate(new Date(configResponse.data.chartEndDate));
+          setChartStartDate(new Date(configResponse.data.chartStartDate || new Date()));
+          setChartEndDate(new Date(configResponse.data.chartEndDate || new Date()));
         } else {
           // Si no hay configuración, usar fechas por defecto
           const fileInfo = jsonFiles.find(file => file.fileName === fileName);
@@ -243,8 +269,8 @@ function App() {
             setChartEndDate(getNextFriday(uploadDate));
           }
         }
-      } catch (configErr) {
-        console.error('Error al cargar la configuración del proyecto:', configErr);
+      } catch (configError) {
+        console.error('Error al cargar la configuración del proyecto:', configError);
         // Si hay error, usar fechas por defecto
         const fileInfo = jsonFiles.find(file => file.fileName === fileName);
         if (fileInfo && fileInfo.uploadDate) {
@@ -258,44 +284,136 @@ function App() {
       return `Cargadas ${response.data.stories.length} historias del archivo ${fileName}`;
     } catch (err) {
       setError('Error loading JSON file: ' + (err.response?.data?.message || err.message));
-      setLoading(false);
       throw err;
     }
   };
 
-  // Handler para mover historias entre columnas (para SimpleKanban)
+  // Handler for moving a story between columns
   const handleStoryMove = async (storyId, targetColumnId, newPosition) => {
     try {
       console.log(`Moving story ${storyId} to column ${targetColumnId} at position ${newPosition}`);
       
-      // Update the story's column and position
-      const updatedStory = {
-        column: targetColumnId,
-        position: newPosition
-      };
-
-      const response = await api.updateStory(storyId, updatedStory);
-      console.log('Server response:', response.data);
-
-      // Optimistic update to the UI
-      const updatedStories = stories.map(story => {
-        if (story._id.toString() === storyId) {
-          return { ...story, column: targetColumnId, position: newPosition };
-        }
-        return story;
+      // Find the story to move and target column
+      const storyToMove = stories.find(s => s._id === storyId);
+      const targetColumn = columns.find(col => col._id === targetColumnId);
+      
+      if (!storyToMove) {
+        console.error('Story not found:', storyId);
+        return;
+      }
+      
+      // If the story is already in the target column at the same position, do nothing
+      if (storyToMove.column === targetColumnId && storyToMove.position === newPosition) {
+        console.log('Story is already in the target position');
+        return;
+      }
+      
+      // Get the column name for the user field
+      const columnName = targetColumn ? targetColumn.name : 'Sin columna';
+      
+      // Optimistic update to the UI first
+      setStories(prevStories => {
+        // Create a new array with the updated story
+        return prevStories.map(story => {
+          if (story._id === storyId) {
+            const updatedStory = { 
+              ...story, 
+              column: targetColumnId, 
+              position: newPosition,
+              user: columnName, // Update user with column name
+              updatedAt: new Date().toISOString() // Force re-render
+            };
+            console.log('Updating story in UI:', updatedStory);
+            return updatedStory;
+          }
+          return story;
+        });
       });
-
-      setStories(updatedStories);
+      
+      // Update the story on the server
+      const updateData = {
+        column: targetColumnId,
+        position: newPosition,
+        user: columnName // Ensure user is updated on the server
+      };
+      
+      console.log('Sending update to server:', { storyId, updateData });
+      
+      const response = await api.updateStory(storyId, updateData);
+      console.log('Server response:', response.data);
+      
+      // If the server returns different data, update the UI to match
+      if (response.data) {
+        setStories(prevStories => 
+          prevStories.map(story => 
+            story._id === response.data._id 
+              ? { 
+                  ...story, 
+                  ...response.data,
+                  // Ensure user is preserved from our optimistic update
+                  // in case server doesn't return it
+                  user: response.data.user || story.user 
+                }
+              : story
+          )
+        );
+      }
     } catch (err) {
+      console.error('Error moving story:', err);
+      
+      // Revert the optimistic update in case of error
+      setStories(prevStories => {
+        const originalStory = stories.find(s => s._id === storyId);
+        if (!originalStory) return prevStories;
+        
+        return prevStories.map(story => 
+          story._id === storyId ? originalStory : story
+        );
+      });
+      
       setError('Error moving story: ' + (err.response?.data?.message || err.message));
     }
   };
 
-  // Handler for opening the story modal
   const openStoryModal = (story = null, columnId) => {
     setCurrentStory(story);
     setTargetColumnId(columnId);
     setModalOpen(true);
+  };
+
+  // Handler para eliminar un archivo JSON
+  const handleDeleteJsonFile = async (fileName) => {
+    try {
+      setLoading(true);
+      
+      // Llamar a la API para eliminar el archivo
+      await api.deleteJsonFile(fileName);
+      
+      // Actualizar la lista de archivos disponibles
+      const jsonFilesResponse = await api.getJsonFiles();
+      setJsonFiles(jsonFilesResponse.data);
+      
+      // Si el archivo eliminado es el que está actualmente cargado, limpiar el estado
+      if (currentJsonFile === fileName) {
+        setCurrentJsonFile(null);
+        setColumns([]);
+        setStories([]);
+        setPreguntas([]);
+      }
+      
+      setLoading(false);
+      return { 
+        success: true, 
+        message: `Archivo "${fileName}" eliminado correctamente` 
+      };
+    } catch (err) {
+      console.error('Error al eliminar el archivo:', err);
+      setLoading(false);
+      return { 
+        success: false, 
+        message: 'Error al eliminar el archivo: ' + (err.response?.data?.message || err.message) 
+      };
+    }
   };
 
   // Handler para eliminar una historia
@@ -577,7 +695,8 @@ function App() {
         <UserStoryManagement 
           currentJsonFile={currentJsonFile} 
           onFileUpload={handleImportJSON} 
-          onFileSelect={handleLoadJsonFile} 
+          onFileSelect={handleLoadJsonFile}
+          onFileDelete={handleDeleteJsonFile}
           jsonFiles={jsonFiles}
           startDate={chartStartDate}
           endDate={chartEndDate}

@@ -236,49 +236,94 @@ const SimpleKanban = ({
     }
 
     try {
-      console.log(`Actualizando historia ${draggedStory._id} a columna ${columnId}`);
-      
-      // Obtener el nombre de la columna de destino
+      // Actualización optimista: actualizar la UI inmediatamente
       const targetColumn = columns.find(col => col._id === columnId);
       const columnName = targetColumn ? targetColumn.name : 'Sin columna';
       
-      // Actualizar la historia en el servidor con la nueva columna y el usuario
-      const updateData = { 
+      // Crear la historia actualizada para la actualización optimista
+      const updatedStory = {
+        ...draggedStory,
         column: columnId,
-        user: columnName // Actualizar el usuario con el nombre de la columna
+        user: columnName,
+        position: localStories.filter(s => storyBelongsToColumn(s, columnId)).length
       };
       
-      // Si la historia no tiene id_historia, asegurarse de mantenerlo
+      // Actualizar el estado local inmediatamente para una experiencia más fluida
+      setLocalStories(prevStories => {
+        // Crear una copia profunda para evitar problemas de referencia
+        const newStories = JSON.parse(JSON.stringify(prevStories));
+        
+        // 1. Eliminar la historia de su posición actual
+        const filteredStories = newStories.filter(s => s._id !== draggedStory._id);
+        
+        // 2. Crear la historia actualizada con el nuevo usuario
+        const updatedStoryWithUser = {
+          ...updatedStory,
+          user: columnName,
+          updatedAt: new Date().toISOString() // Forzar actualización
+        };
+        
+        // 3. Añadir la historia actualizada en la nueva posición
+        const updatedStories = [...filteredStories, updatedStoryWithUser];
+        
+        console.log('Actualizando historias locales:', {
+          storyId: draggedStory._id,
+          newColumn: columnId,
+          newUser: columnName,
+          allStories: updatedStories
+        });
+        
+        // 4. Llamar a onStoryMove para sincronizar con el servidor
+        if (onStoryMove) {
+          console.log('Llamando a onStoryMove con:', {
+            storyId: draggedStory._id,
+            columnId,
+            position: updatedStory.position,
+            user: columnName
+          });
+          onStoryMove(draggedStory._id, columnId, updatedStory.position);
+        }
+        
+        return updatedStories;
+      });
+      
+      // Actualizar en el servidor
+      const updateData = { 
+        column: columnId,
+        user: columnName,
+        position: updatedStory.position
+      };
+      
       if (draggedStory.id_historia) {
         updateData.id_historia = draggedStory.id_historia;
       }
       
-      await api.updateStory(draggedStory._id, updateData);
+      // Hacer la llamada al servidor sin esperar la respuesta (ya hicimos la actualización optimista)
+      api.updateStory(draggedStory._id, updateData)
+        .then(response => {
+          console.log('Historia actualizada en el servidor:', response.data);
+          // Si hay alguna diferencia entre la respuesta del servidor y nuestro estado local,
+          // podemos actualizar el estado aquí
+          if (response.data && response.data.position !== updatedStory.position) {
+            setLocalStories(prevStories => 
+              prevStories.map(story => 
+                story._id === response.data._id ? response.data : story
+              )
+            );
+          }
+        })
+        .catch(error => {
+          console.error('Error al actualizar la historia en el servidor:', error);
+          // Revertir la actualización optimista en caso de error
+          setLocalStories(prevStories => 
+            prevStories
+              .filter(s => s._id !== draggedStory._id) // Eliminar la versión actualizada
+              .concat(draggedStory) // Volver a la versión anterior
+              .sort((a, b) => (a.position || 0) - (b.position || 0))
+          );
+        });
       
-      // Actualizar el estado local
-      const updatedStories = localStories.map(story => {
-        if (story._id === draggedStory._id) {
-          const updatedStory = { 
-            ...story, 
-            column: columnId,
-            column: { _id: columnId },
-            user: columnName // Actualizar el usuario localmente también
-          };
-          console.log('Historia actualizada:', updatedStory);
-          return updatedStory;
-        }
-        return story;
-      });
-      
-      setLocalStories(updatedStories);
-      
-      // Si hay un callback de onStoryMove, llamarlo
-      if (onStoryMove) {
-        const columnStories = getStoriesForColumn(columnId);
-        const newPosition = columnStories.length;
-        console.log(`Llamando a onStoryMove con posición ${newPosition}`);
-        await onStoryMove(draggedStory._id, columnId, newPosition);
-      }
+      console.log('Actualización optimista completada');
     } catch (error) {
       console.error('Error al mover la historia:', error);
     } finally {

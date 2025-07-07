@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const mongoose = require('mongoose');
 const JsonFile = require('../models/JsonFile');
 const Story = require('../models/Story');
 const Column = require('../models/Column');
@@ -59,6 +60,47 @@ router.get('/:fileName/stories', async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
+  }
+});
+
+// Eliminar un archivo JSON y todas sus historias asociadas
+router.delete('/:fileName', async (req, res) => {
+  try {
+    const { fileName } = req.params;
+    
+    // Verificar si el archivo existe
+    const jsonFile = await JsonFile.findOne({ fileName });
+    if (!jsonFile) {
+      return res.status(404).json({ 
+        success: false,
+        message: 'Archivo no encontrado' 
+      });
+    }
+    
+    // Eliminar todas las historias asociadas a este archivo
+    await Story.deleteMany({ jsonFileName: fileName });
+    
+    // Eliminar el archivo JSON
+    await JsonFile.deleteOne({ fileName });
+    
+    // Eliminar columnas asociadas a este archivo que no son por defecto
+    await Column.deleteMany({ 
+      jsonFileName: fileName,
+      isDefault: { $ne: true }
+    });
+    
+    res.json({ 
+      success: true, 
+      message: `Archivo "${fileName}" y sus datos asociados han sido eliminados correctamente` 
+    });
+    
+  } catch (error) {
+    console.error('Error al eliminar el archivo:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Error al eliminar el archivo',
+      error: error.message
+    });
   }
 });
 

@@ -101,9 +101,21 @@ router.patch('/:id', async (req, res) => {
       story.id_historia = req.body.id_historia || undefined; // Usar undefined para eliminar el campo si es vacío
     }
     
-    // Actualizar user si se proporciona (incluso si es null o vacío)
-    if ('user' in req.body) {
-      story.user = req.body.user || undefined; // Usar undefined para eliminar el campo si es vacío
+    // Actualizar user si se proporciona (incluso si es null o vacío) o si se está cambiando de columna
+    if ('user' in req.body || req.body.column) {
+      // Si se proporciona un usuario explícitamente, usarlo
+      // Si no, usar el nombre de la columna como usuario
+      story.user = req.body.user || 
+                 (req.body.column ? targetColumn.name : undefined) || 
+                 story.user;
+      
+      console.log('Actualizando usuario de la historia:', {
+        storyId: story._id,
+        oldUser: story.user,
+        newUser: req.body.user || (req.body.column ? targetColumn.name : 'No cambiado'),
+        columnChanged: !!req.body.column,
+        newColumn: req.body.column
+      });
     }
     
     // Actualizar jsonFileName si se proporciona (incluso si es null o vacío)

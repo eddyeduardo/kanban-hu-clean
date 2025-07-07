@@ -93,6 +93,7 @@ const apiService = {
   getJsonFiles: () => api.get('/json-files'),
   getJsonFile: (fileName) => api.get(`/json-files/${encodeURIComponent(fileName)}`),
   getStoriesByJsonFile: (fileName) => api.get(`/json-files/${encodeURIComponent(fileName)}/stories`),
+  deleteJsonFile: (fileName) => api.delete(`/json-files/${encodeURIComponent(fileName)}`),
 
   // Project Configuration operations
   getProjectConfig: (jsonFileName) => api.get(`/project-config/${encodeURIComponent(jsonFileName)}`),

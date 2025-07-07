@@ -153,13 +153,13 @@ const ScopeView = ({ columns: propColumns = [], stories: propStories = [] }) => 
       const currentPercentage = currentTotal > 0 
         ? Math.round((currentCompleted / currentTotal) * 100) 
         : 0;
-        
+      
       console.log('Datos calculados:', { currentTotal, currentCompleted, currentPercentage });
       setExporting(true);
       
       // Crear un nuevo documento PDF
       const doc = new jsPDF({
-        orientation: 'landscape',
+        orientation: 'portrait',  // Cambiado a vertical para mejor lectura
         unit: 'mm',
         format: 'a4'
       });
@@ -168,16 +168,17 @@ const ScopeView = ({ columns: propColumns = [], stories: propStories = [] }) => 
       const title = 'Alcance del Proyecto';
       const date = new Date().toLocaleDateString();
       
-      // Configuración de la tabla
-      const columns = [
-        { header: 'Columna', dataKey: 'column' },
-        { header: 'ID Historia', dataKey: 'id' },
-        { header: 'Título', dataKey: 'title' },
-        { header: 'Descripción', dataKey: 'description' },
-        { header: 'Criterios', dataKey: 'criteria' },
-        { header: 'Estado', dataKey: 'status' },
-        { header: 'Fecha Finalización', dataKey: 'completionDate' }
-      ];
+      // Agregar encabezado
+      doc.setFontSize(16);
+      doc.setFont('helvetica', 'bold');
+      doc.text(title, 14, 20);
+      
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(100);
+      doc.text(`Total de historias: ${currentTotal}`, 14, 30);
+      doc.text(`Historias completadas: ${currentCompleted} (${currentPercentage}%)`, 14, 35);
+      doc.text(`Generado el: ${date}`, 14, 40);
       
       // Preparar datos para la tabla
       const tableData = [];
@@ -193,82 +194,104 @@ const ScopeView = ({ columns: propColumns = [], stories: propStories = [] }) => 
           const progress = totalCriteria > 0 ? Math.round((completedCriteria / totalCriteria) * 100) : 0;
           const completionDate = story.completedAt ? new Date(story.completedAt).toLocaleDateString() : '';
           
-          tableData.push({
-            column: column.name,
-            id: story.id_historia || 'N/A',
-            title: story.title || 'Sin título',
-            description: story.description || '',
-            criteria: `${completedCriteria}/${totalCriteria} (${progress}%)`,
-            status: story.completedAt ? 'Completada' : 'En progreso',
-            completionDate: completionDate
-          });
+          tableData.push([
+            column.name,
+            story.id_historia || 'N/A',
+            { 
+              content: story.title || 'Sin título',
+              styles: { fontStyle: 'bold' }
+            },
+            `${completedCriteria}/${totalCriteria} (${progress}%)`,
+            { 
+              content: story.completedAt ? '✓ Completada' : 'En progreso',
+              styles: { 
+                textColor: story.completedAt ? [0, 128, 0] : [200, 100, 0],
+                fontStyle: story.completedAt ? 'bold' : 'normal'
+              }
+            },
+            completionDate || 'N/A'
+          ]);
         });
       });
       
-      // Agregar título y fecha
-      doc.setFontSize(18);
-      doc.text(title, 14, 20);
-      doc.setFontSize(10);
-      doc.setTextColor(100);
-      doc.text(`Generado el: ${date}`, 14, 27);
+      // El encabezado ya fue agregado anteriormente, no es necesario repetirlo
       
-      // Agregar resumen
-      doc.setFontSize(11);
-      doc.setTextColor(0, 0, 0);
-      doc.text(`Total de historias: ${currentTotal}`, 14, 35);
-      doc.text(`Historias completadas: ${currentCompleted} (${currentPercentage}%)`, 14, 40);
-      
-      // Agregar tabla
+      // Configuración de la tabla
       autoTable(doc, {
-        head: [columns.map(col => col.header)],
-        body: tableData.map(row => columns.map(col => row[col.dataKey])),
-        startY: 50,
+        head: [
+          [
+            { content: 'Columna', styles: { halign: 'center', fillColor: [59, 130, 246], textColor: 255, fontStyle: 'bold' } },
+            { content: 'ID', styles: { halign: 'center', fillColor: [59, 130, 246], textColor: 255, fontStyle: 'bold' } },
+            { content: 'Título', styles: { halign: 'center', fillColor: [59, 130, 246], textColor: 255, fontStyle: 'bold' } },
+            { content: 'Criterios', styles: { halign: 'center', fillColor: [59, 130, 246], textColor: 255, fontStyle: 'bold' } },
+            { content: 'Estado', styles: { halign: 'center', fillColor: [59, 130, 246], textColor: 255, fontStyle: 'bold' } },
+            { content: 'Fecha Fin', styles: { halign: 'center', fillColor: [59, 130, 246], textColor: 255, fontStyle: 'bold' } }
+          ]
+        ],
+        body: tableData,
+        startY: 45,
         headStyles: {
-          fillColor: [79, 70, 229], // Color azul
+          fillColor: [59, 130, 246],
           textColor: 255,
           fontStyle: 'bold',
-          halign: 'center'
+          halign: 'center',
+          cellPadding: 3,
+          lineWidth: 0.1,
+          lineColor: [255, 255, 255]
         },
         alternateRowStyles: {
           fillColor: [245, 245, 245]
         },
-        margin: { top: 10 },
-        styles: {
-          cellPadding: 3,
-          fontSize: 9,
-          valign: 'middle',
-          overflow: 'linebreak',
-          cellWidth: 'wrap'
+        bodyStyles: {
+          lineWidth: 0.1,
+          lineColor: [200, 200, 200]
         },
         columnStyles: {
-          0: { cellWidth: 25 }, // Columna
-          1: { cellWidth: 20 }, // ID Historia
-          2: { cellWidth: 35 }, // Título
-          3: { cellWidth: 60 }, // Descripción
-          4: { cellWidth: 20 }, // Criterios
-          5: { cellWidth: 20 }, // Estado
-          6: { cellWidth: 25 }  // Fecha Finalización
+          0: { cellWidth: 25, halign: 'left' },   // Columna
+          1: { cellWidth: 15, halign: 'center' }, // ID
+          2: { cellWidth: 65, halign: 'left' },   // Título
+          3: { cellWidth: 25, halign: 'center' }, // Criterios
+          4: { cellWidth: 25, halign: 'center' }, // Estado
+          5: { cellWidth: 25, halign: 'center' }  // Fecha
+        },
+        margin: { 
+          top: 50,  // Aumentado para dar espacio al título y resumen
+          left: 10,
+          right: 10,
+          bottom: 20
+        },
+        tableWidth: 'wrap',
+        theme: 'grid',  // Usar tema grid para bordes consistentes
+        showHead: 'firstPage',
+        tableLineWidth: 0.1,
+        tableLineColor: [200, 200, 200],
+        styles: {
+          lineColor: [200, 200, 200],
+          lineWidth: 0.1,
+          fontSize: 8,
+          cellPadding: 3,
+          overflow: 'linebreak',
+          cellWidth: 'wrap',
+          minCellHeight: 8,
+          valign: 'middle'
         },
         didDrawPage: function(data) {
-          // Pie de página
-          const pageSize = doc.internal.pageSize;
-          const pageHeight = pageSize.height ? pageSize.height : pageSize.getHeight();
-          doc.text(`Página ${data.pageNumber}`, data.settings.margin.left, pageHeight - 10);
+          // Agregar número de página
+          const pageCount = doc.internal.getNumberOfPages();
+          const currentPage = data.pageNumber;
+          
+          doc.setFontSize(9);
+          doc.setTextColor(100);
+          doc.setFont('helvetica', 'normal');
+          const pageText = `Página ${currentPage} de ${pageCount}`;
+          const pageWidth = doc.getStringUnitWidth(pageText) * doc.getFontSize() / doc.internal.scaleFactor;
+          doc.text(
+            pageText,
+            doc.internal.pageSize.width - 15 - pageWidth,  // Alinear a la derecha con margen
+            doc.internal.pageSize.height - 10
+          );
         }
       });
-      
-      // Agregar número de páginas
-      const pageCount = doc.internal.getNumberOfPages();
-      for (let i = 1; i <= pageCount; i++) {
-        doc.setPage(i);
-        doc.setFontSize(10);
-        doc.setTextColor(150);
-        doc.text(
-          `Página ${i} de ${pageCount}`,
-          doc.internal.pageSize.width - 30,
-          doc.internal.pageSize.height - 10
-        );
-      }
       
       // Guardar el PDF
       const fileName = `alcance_proyecto_${new Date().toISOString().split('T')[0]}.pdf`;

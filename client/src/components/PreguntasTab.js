@@ -1,5 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import api from '../services/api';
+import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import { FiDownload } from 'react-icons/fi';
 
 /**
  * Componente para mostrar preguntas y permitir respuestas
@@ -13,6 +16,7 @@ const PreguntasTab = ({ preguntas = [], currentJsonFile }) => {
   const [error, setError] = useState('');
   const [respuestas, setRespuestas] = useState({});
   const [respuestasGuardadas, setRespuestasGuardadas] = useState({});
+  const [exporting, setExporting] = useState(false);
 
   // Inicializar respuestas cuando cambian las preguntas
   useEffect(() => {
@@ -64,12 +68,130 @@ const PreguntasTab = ({ preguntas = [], currentJsonFile }) => {
       // Aquí podrías implementar la lógica para guardar la respuesta en el servidor
       // Por ahora, solo mostramos un mensaje de éxito
       console.log('Respuesta guardada:', { preguntaIndex: index, respuesta: respuestas[index] });
+      // Actualizar respuestas guardadas
+      setRespuestasGuardadas(prev => ({
+        ...prev,
+        [index]: respuestas[index] || 'Sin respuesta'
+      }));
       alert('Respuesta guardada exitosamente');
     } catch (err) {
       console.error('Error al guardar la respuesta:', err);
       alert('Error al guardar la respuesta');
     }
   };
+
+  // Exportar a PDF
+  const exportToPDF = useCallback(() => {
+    try {
+      setExporting(true);
+      
+      // Crear un nuevo documento PDF
+      const doc = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4'
+      });
+      
+      // Título del documento
+      const title = 'Preguntas y Respuestas';
+      const subtitle = currentJsonFile || 'Documento sin título';
+      const date = new Date().toLocaleDateString();
+      
+      // Agregar encabezado
+      doc.setFontSize(18);
+      doc.setFont('helvetica', 'bold');
+      doc.text(title, 14, 20);
+      
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(100);
+      doc.text(`Archivo: ${subtitle}`, 14, 28);
+      doc.text(`Generado el: ${date}`, 14, 34);
+      
+      // Preparar datos para la tabla (solo preguntas)
+      const tableData = preguntas.map((pregunta, index) => ({
+        id: index + 1,
+        pregunta: pregunta || 'Sin pregunta'
+      }));
+      
+      // Configuración de la tabla
+      const tableConfig = {
+        startY: 45,
+        head: [['#', 'Pregunta']],
+        body: tableData.map(item => [
+          item.id, 
+          { content: item.pregunta, styles: { cellWidth: 'auto' } }
+        ]),
+        headStyles: {
+          fillColor: [59, 130, 246], // Color azul
+          textColor: 255,
+          fontStyle: 'bold',
+          halign: 'center',
+          cellPadding: 5
+        },
+        alternateRowStyles: {
+          fillColor: [245, 245, 245]
+        },
+        styles: {
+          fontSize: 10,
+          cellPadding: 4,
+          valign: 'middle',
+          overflow: 'linebreak',
+          cellWidth: 'wrap',
+          minCellHeight: 10,
+          lineWidth: 0.1,
+          lineColor: [200, 200, 200]
+        },
+        columnStyles: {
+          0: { 
+            cellWidth: 15, 
+            halign: 'center',
+            valign: 'top',
+            fontStyle: 'bold'
+          },
+          1: { 
+            cellWidth: 'auto',
+            halign: 'left',
+            valign: 'top'
+          }
+        },
+        margin: { 
+          top: 10,
+          left: 10,
+          right: 10
+        },
+        tableWidth: 'auto',
+        tableLineColor: [200, 200, 200],
+        tableLineWidth: 0.1
+      };
+      
+      // Generar la tabla con la configuración
+      autoTable(doc, tableConfig);
+      
+      // Agregar número de páginas
+      const pageCount = doc.internal.getNumberOfPages();
+      for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        doc.setFontSize(10);
+        doc.setTextColor(150);
+        doc.text(
+          `Página ${i} de ${pageCount}`,
+          doc.internal.pageSize.width - 30,
+          doc.internal.pageSize.height - 10
+        );
+      }
+      
+      // Guardar el PDF
+      const fileName = `preguntas_respuestas_${new Date().toISOString().split('T')[0]}.pdf`;
+      doc.save(fileName);
+      
+    } catch (err) {
+      console.error('Error al exportar a PDF:', err);
+      setError(`Error al exportar a PDF: ${err.message}`);
+    } finally {
+      setExporting(false);
+    }
+  }, [preguntas, currentJsonFile]);
 
   if (loading) {
     return (
@@ -93,11 +215,21 @@ const PreguntasTab = ({ preguntas = [], currentJsonFile }) => {
     <div className="p-4">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl font-semibold text-slate-800">Preguntas para Aclarar</h2>
-        {currentJsonFile && (
-          <span className="px-3 py-1 bg-blue-100 text-blue-800 text-sm font-medium rounded-full">
-            Archivo: {currentJsonFile}
-          </span>
-        )}
+        <div className="flex items-center space-x-3">
+          {currentJsonFile && (
+            <span className="px-3 py-1 bg-blue-100 text-blue-800 text-sm font-medium rounded-full">
+              Archivo: {currentJsonFile}
+            </span>
+          )}
+          <button
+            onClick={exportToPDF}
+            disabled={!preguntas || preguntas.length === 0 || exporting}
+            className="inline-flex items-center px-3 py-1 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <FiDownload className="mr-1.5 h-4 w-4" />
+            {exporting ? 'Exportando...' : 'Exportar PDF'}
+          </button>
+        </div>
       </div>
       
       {!preguntas || preguntas.length === 0 ? (

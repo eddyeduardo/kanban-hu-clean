@@ -24,7 +24,8 @@ const UserStoryManagement = ({
   startDate,
   endDate,
   onStartDateChange,
-  onEndDateChange
+  onEndDateChange,
+  onFileDelete
 }) => {
   return (
     <CollapsibleSection title="Gestión de Historias de Usuario" initiallyExpanded={!currentJsonFile}>
@@ -36,6 +37,7 @@ const UserStoryManagement = ({
               <FileUpload 
                 onFileUpload={onFileUpload} 
                 onFileSelect={onFileSelect}
+                onFileDelete={onFileDelete}
                 currentJsonFile={currentJsonFile}
                 jsonFiles={jsonFiles}
               />
