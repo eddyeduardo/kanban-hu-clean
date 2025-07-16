@@ -41,14 +41,22 @@ const fileFilter = (req, file, cb) => {
   }
 };
 
+// Configuración de multer optimizada para archivos grandes
 const upload = multer({ 
   storage: storage,
   fileFilter: fileFilter,
   limits: {
     fileSize: 1024 * 1024 * 1024, // 1GB
-    files: 1
-  }
+    files: 1,
+    fieldSize: 1024 * 1024 * 1024 // 1GB
+  },
+  // Deshabilitar el almacenamiento en memoria para archivos grandes
+  buffer: false
 });
+
+// Configurar express para manejar cuerpos grandes
+router.use(express.json({ limit: '1gb' }));
+router.use(express.urlencoded({ limit: '1gb', extended: true }));
 
 // Función para extraer el audio del video con configuración optimizada
 function extraerAudio(videoPath, audioPath) {
@@ -359,10 +367,31 @@ router.post('/test', (req, res) => {
 });
 
 // Ruta para subir un archivo de video y procesarlo
-router.post('/upload', (req, res, next) => {
-  console.log('POST a /api/transcription/upload recibido');
+// Configurar timeout para la carga de archivos
+const uploadMiddleware = (req, res, next) => {
+  console.log('Iniciando carga de archivo...');
+  
+  // Establecer un timeout de 30 minutos (1800000ms)
+  req.setTimeout(1800000);
+  
+  // Manejar errores de timeout
+  req.on('timeout', () => {
+    console.error('Timeout en la carga del archivo');
+    if (!res.headersSent) {
+      res.status(408).json({ 
+        error: 'La carga del archivo ha tardado demasiado tiempo',
+        message: 'Por favor, intente con un archivo más pequeño o inténtelo de nuevo más tarde.'
+      });
+    }
+  });
+  
   next();
-}, upload.single('video'), async (req, res, next) => {
+};
+
+router.post('/upload', 
+  uploadMiddleware,
+  upload.single('video'), 
+  async (req, res, next) => {
   try {
     if (!req.file) {
       console.error('No se recibió ningún archivo o el archivo es demasiado grande');
@@ -383,11 +412,21 @@ router.post('/upload', (req, res, next) => {
     const uploadsDir = path.dirname(videoPath);
     const audioPath = path.join(uploadsDir, `${fileBaseName}.mp3`);
 
-    // Verificar espacio en disco
-    const diskSpace = require('check-disk-space').default;
-    const { free } = await diskSpace(uploadsDir);
-    if (free < req.file.size * 3) { // Necesitamos al menos 3x el tamaño del video
-      throw new Error('Espacio en disco insuficiente para procesar el video');
+    // Verificar espacio en disco con manejo de errores mejorado
+    try {
+      const diskSpace = require('check-disk-space').default;
+      const { free } = await diskSpace(uploadsDir);
+      const requiredSpace = req.file.size * 3; // Necesitamos al menos 3x el tamaño del video
+      
+      console.log(`Espacio en disco disponible: ${(free / (1024 * 1024)).toFixed(2)}MB`);
+      console.log(`Espacio requerido: ${(requiredSpace / (1024 * 1024)).toFixed(2)}MB`);
+      
+      if (free < requiredSpace) {
+        throw new Error(`Espacio en disco insuficiente. Se requieren al menos ${(requiredSpace / (1024 * 1024 * 1024)).toFixed(2)}GB libres.`);
+      }
+    } catch (error) {
+      console.error('Error al verificar espacio en disco:', error);
+      throw new Error(`Error al verificar el espacio en disco: ${error.message}`);
     }
 
     // 1. Extraer audio del video

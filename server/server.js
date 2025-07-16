@@ -22,11 +22,15 @@ const corsOptions = {
   credentials: true
 };
 
+// Configuración para manejar archivos grandes
+const MAX_FILE_SIZE = '1gb';
+const MAX_JSON_SIZE = '1gb';
+
 // Middleware
 app.use(cors(corsOptions));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true })); // Para manejar datos de formularios
-app.use(express.static('uploads')); // Servir archivos estáticos desde la carpeta uploads
+app.use(express.json({ limit: MAX_JSON_SIZE }));
+app.use(express.urlencoded({ limit: MAX_JSON_SIZE, extended: true, parameterLimit: 1000000 }));
+app.use(express.static('uploads', { maxAge: '1d' })); // Cache estático por 1 día
 
 // Middleware para manejar solicitudes OPTIONS
 app.options('*', cors(corsOptions));
@@ -39,9 +43,22 @@ mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27019/proyecto-ad
 .then(() => console.log('MongoDB connected successfully'))
 .catch(err => console.error('MongoDB connection error:', err));
 
-// Aumentar el límite de tamaño de carga (por defecto es ~1MB)
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ limit: '50mb', extended: true }));
+try {
+  // Aumentar el límite de listeners de eventos
+  require('events').EventEmitter.defaultMaxListeners = 15;
+  
+  // Configurar el límite de tamaño de carga HTTP
+  app.use(express.json({ limit: MAX_JSON_SIZE, strict: false }));
+  app.use(express.urlencoded({ 
+    limit: MAX_JSON_SIZE, 
+    extended: true, 
+    parameterLimit: 1000000 
+  }));
+  
+  console.log('Configuración de manejo de archivos grandes aplicada');
+} catch (error) {
+  console.error('Error al configurar el servidor para archivos grandes:', error);
+}
 
 // Routes
 app.use('/api/columns', columnsRoutes);
@@ -55,7 +72,27 @@ app.get('/', (req, res) => {
   res.send('Kanban API is running');
 });
 
-// Start server
-app.listen(PORT, () => {
+// Configuración del servidor HTTP
+const server = require('http').createServer(app);
+
+// Configurar timeouts del servidor
+server.keepAliveTimeout = 120000; // 2 minutos
+server.headersTimeout = 125000;    // 2 minutos + 5 segundos
+
+// Manejo de errores global
+process.on('uncaughtException', (error) => {
+  console.error('Uncaught Exception:', error);
+  // No cerrar el proceso, intentar registrar y continuar
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+  // Aplicación puede continuar ejecutándose
+});
+
+// Iniciar servidor
+server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
+  console.log(`Límite de tamaño de archivo: ${MAX_FILE_SIZE}`);
+  console.log(`Límite de JSON: ${MAX_JSON_SIZE}`);
 });
