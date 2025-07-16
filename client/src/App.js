@@ -10,6 +10,7 @@ import Dashboard from './components/Dashboard';
 import UserStoryManagement from './components/UserStoryManagement';
 import VideoTranscription from './components/VideoTranscription';
 import ScopeView from './components/ScopeView';
+import TestPlanView from './components/TestPlanView';
 import PreguntasTab from './components/PreguntasTab';
 import api from './services/api';
 
@@ -80,52 +81,55 @@ function App() {
 
   // Cargar datos iniciales
   useEffect(() => {
-    console.log('App - Estado inicial:', { columns, stories, currentJsonFile, preguntas });
     const fetchData = async () => {
       try {
         setLoading(true);
         
-        // Cargar la lista de archivos JSON disponibles
+        // Cargar lista de archivos JSON
         const jsonFilesResponse = await api.getJsonFiles();
         setJsonFiles(jsonFilesResponse.data);
         
-        // Si hay un archivo JSON seleccionado, cargar sus columnas y historias
-        if (currentJsonFile) {
-          const columnsResponse = await api.getColumns(currentJsonFile);
-          console.log('App - Columnas cargadas:', columnsResponse.data);
-          setColumns(columnsResponse.data);
-          
-          const storiesResponse = await api.getStories(currentJsonFile);
-          console.log('App - Historias cargadas:', storiesResponse.data);
-          setStories(storiesResponse.data);
-        } else {
-          // Si no hay un archivo JSON seleccionado pero hay archivos disponibles, seleccionar el primero
-          if (jsonFilesResponse.data && jsonFilesResponse.data.length > 0) {
-            const firstJsonFile = jsonFilesResponse.data[0].fileName;
-            console.log('Seleccionando el primer archivo JSON disponible:', firstJsonFile);
-            await handleLoadJsonFile(firstJsonFile);
-            return; // Salir de la función ya que handleLoadJsonFile ya carga las columnas y historias
-          } else {
-            // Cargar solo las columnas por defecto (sin jsonFileName)
-            const columnsResponse = await api.getColumns();
-            setColumns(columnsResponse.data);
-
-            // Cargar solo las historias que no tienen jsonFileName o que están en columnas por defecto
-            const storiesResponse = await api.getStories();
-            setStories(storiesResponse.data);
+        // Si no hay archivos, terminar
+        if (jsonFilesResponse.data.length === 0) {
+          setLoading(false);
+          return;
+        }
+        
+        // Verificar si hay un archivo guardado en localStorage
+        const savedJsonFile = localStorage.getItem('currentJsonFile');
+        
+        // Intentar cargar el archivo guardado si existe
+        if (savedJsonFile && jsonFilesResponse.data.some(file => file.fileName === savedJsonFile)) {
+          try {
+            await handleLoadJsonFile(savedJsonFile);
+            return;
+          } catch (err) {
+            console.error('Error al cargar el archivo guardado:', err);
+            // Continuar con la carga del primer archivo si hay un error
           }
         }
         
-        setLoading(false);
-        console.log('App - Datos cargados:', { columns, stories, currentJsonFile });
+        // Si llegamos aquí, cargar el primer archivo disponible
+        if (jsonFilesResponse.data.length > 0) {
+          const firstJsonFile = jsonFilesResponse.data[0].fileName;
+          await handleLoadJsonFile(firstJsonFile);
+        }
+        
       } catch (err) {
-        setError('Error loading data: ' + err.message);
+        console.error('Error al cargar datos iniciales:', err);
+        setError('Error al cargar los datos: ' + (err.response?.data?.message || err.message));
+      } finally {
         setLoading(false);
       }
     };
 
     fetchData();
-  }, [currentJsonFile]);
+    
+    // Limpiar el archivo guardado al desmontar la aplicación
+    return () => {
+      localStorage.removeItem('currentJsonFile');
+    };
+  }, []);
 
 
 
@@ -736,6 +740,12 @@ function App() {
               ),
               'Alcance': (
                 <ScopeView
+                  columns={columns}
+                  stories={stories}
+                />
+              ),
+              'Plan de pruebas': (
+                <TestPlanView
                   columns={columns}
                   stories={stories}
                 />

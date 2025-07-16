@@ -83,12 +83,7 @@ const StoryModal = ({ isOpen, onClose, onSave, story, currentJsonFile }) => {
       return;
     }
     
-    // Validar formato del ID de historia (HU-XX-### a HU-XXXXX-###)
-    const idHistoriaRegex = /^HU-[A-Z0-9]{2,5}-\d{3}$/;
-    if (idHistoria && !idHistoriaRegex.test(idHistoria)) {
-      alert('El ID de historia debe tener el formato: HU-XX...-001 (donde XX... son de 2 a 5 letras/números y 001 es el número de historia)\nEjemplos: HU-AB-001, HU-ABC-001, HU-ABCD-001, HU-ABCDE-001');
-      return;
-    }
+    // ID de historia es opcional, no se valida el formato
     
     // Process criteria: filter out empty ones and trim text
     const processedCriteria = criteria
@@ -144,21 +139,12 @@ const StoryModal = ({ isOpen, onClose, onSave, story, currentJsonFile }) => {
                   id="storyId"
                   value={idHistoria}
                   onChange={(e) => {
-                    // Permitir solo mayúsculas, números y guiones
-                    // Validación más flexible durante la edición
-                    const value = e.target.value.toUpperCase();
-                    if (
-                      value === '' || 
-                      /^HU-[A-Z0-9]{0,5}(-\d{0,3})?$/.test(value) || 
-                      /^HU-[A-Z0-9]{2,5}-\d{0,3}$/.test(value) ||
-                      /^HU-[A-Z0-9]{0,5}-?\d{0,3}$/.test(value)
-                    ) {
-                      setIdHistoria(value);
-                    }
+                    // Permitir cualquier valor, pero convertir a mayúsculas
+                    setIdHistoria(e.target.value.toUpperCase());
                   }}
                   className="w-full p-2 border border-slate-300 rounded-md font-mono"
                   placeholder="Ej: HU-AB-001 o HU-ABCDE-001"
-                  required
+                  // ID es opcional
                 />
                 <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
                   <span className="text-slate-400 text-xs">HU-XX...-###</span>
