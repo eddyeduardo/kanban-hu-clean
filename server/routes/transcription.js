@@ -179,11 +179,44 @@ async function dividirAudio(audioPath, segmentDuration = 300) { // 5 minutos por
     .map(f => path.join(path.dirname(audioPath), f));
 }
 
+// Función auxiliar para hacer peticiones con reintentos
+async function fetchWithRetry(fn, maxRetries = 3, delayMs = 2000) {
+  let lastError;
+  
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      console.log(`Intento ${attempt} de ${maxRetries}...`);
+      return await fn();
+    } catch (error) {
+      lastError = error;
+      const isLastAttempt = attempt === maxRetries;
+      const isRateLimit = error.status === 429;
+      const isServerError = error.status >= 500 && error.status < 600;
+      
+      console.error(`Error en intento ${attempt}:`, error.message);
+      
+      if (isLastAttempt || (!isRateLimit && !isServerError)) {
+        console.error('No se reintentará:', error.message);
+        break;
+      }
+      
+      // Calcular tiempo de espera exponencial
+      const waitTime = delayMs * Math.pow(2, attempt - 1);
+      console.log(`Reintentando en ${waitTime}ms...`);
+      await new Promise(resolve => setTimeout(resolve, waitTime));
+    }
+  }
+  
+  throw lastError;
+}
+
 // Función para generar el archivo .vtt y .txt usando OpenAI
 async function generarTranscripcion(audioPath) {
   let audioFile;
+  const startTime = Date.now();
   
   try {
+    console.log(`[${new Date().toISOString()}] Iniciando transcripción para: ${audioPath}`);
     console.log('Iniciando transcripción con OpenAI...');
     
     // Verificar que el archivo de audio existe
@@ -263,26 +296,46 @@ async function generarTranscripcion(audioPath) {
     
     audioFile = fs.createReadStream(audioPath);
     
-    // Configurar el timeout para la solicitud
+    // Configurar el timeout para la solicitud (10 minutos para archivos grandes)
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 300000); // 5 minutos de timeout
+    const timeoutDuration = 10 * 60 * 1000; // 10 minutos
+    const timeoutId = setTimeout(() => {
+      console.error(`Timeout alcanzado después de ${timeoutDuration/1000} segundos`);
+      controller.abort();
+    }, timeoutDuration);
     
-    console.log('Enviando solicitud a la API de OpenAI...');
+    console.log(`[${new Date().toISOString()}] Enviando solicitud a la API de OpenAI (timeout: ${timeoutDuration/1000}s)...`);
     
-    // Realizar la transcripción con OpenAI
-    const response = await openai.audio.transcriptions.create(
-      {
-        file: audioFile,
-        model: 'whisper-1',
-        response_format: 'srt',
-        language: 'es' // Especificar el idioma puede mejorar la precisión
-      },
-      {
-        signal: controller.signal
+    // Realizar la transcripción con OpenAI con reintentos
+    const response = await fetchWithRetry(async () => {
+      try {
+        console.log(`[${new Date().toISOString()}] Iniciando solicitud a la API...`);
+        const result = await openai.audio.transcriptions.create(
+          {
+            file: audioFile,
+            model: 'whisper-1',
+            response_format: 'srt',
+            language: 'es'
+          },
+          {
+            signal: controller.signal,
+            maxRetries: 2 // Reintentos a nivel de la librería
+          }
+        );
+        console.log(`[${new Date().toISOString()}] Respuesta recibida de la API`);
+        return result;
+      } catch (error) {
+        console.error(`[${new Date().toISOString()}] Error en la solicitud a la API:`, {
+          message: error.message,
+          status: error.status,
+          code: error.code,
+          stack: error.stack
+        });
+        throw error;
       }
-    );
+    }, 3, 2000); // 3 reintentos con espera exponencial
     
-    // Limpiar el timeout
+    // Limpiar el timeout si la solicitud fue exitosa
     clearTimeout(timeoutId);
     
     console.log('Transcripción recibida de OpenAI');
@@ -329,34 +382,43 @@ async function generarTranscripcion(audioPath) {
     };
     
   } catch (error) {
-    console.error('Error en generarTranscripcion:', {
+    const errorTime = Date.now();
+    const duration = (errorTime - startTime) / 1000;
+    console.error(`[${new Date().toISOString()}] Error después de ${duration.toFixed(2)}s en generarTranscripcion:`, {
       message: error.message,
       name: error.name,
-      stack: error.stack,
       code: error.code,
-      path: audioPath
+      status: error.status,
+      path: audioPath,
+      stack: error.stack
     });
-    
-    // Cerrar el stream de audio si está abierto
-    if (audioFile && typeof audioFile.close === 'function') {
-      audioFile.close();
-    }
     
     // Proporcionar un mensaje de error más descriptivo
     let errorMessage = 'Error al generar la transcripción';
     
-    if (error.name === 'AbortError') {
-      errorMessage = 'La transcripción tardó demasiado tiempo en completarse';
+    if (error.name === 'AbortError' || error.code === 'ABORT_ERR') {
+      errorMessage = `La transcripción excedió el tiempo máximo de espera (${timeoutDuration/1000}s)`;
     } else if (error.code === 'ENOENT') {
       errorMessage = `No se pudo encontrar el archivo de audio: ${audioPath}`;
     } else if (error.response) {
       errorMessage = `Error de la API de OpenAI: ${error.response.status} - ${error.response.statusText}`;
       console.error('Detalles del error de la API:', error.response.data);
+    } else {
+      errorMessage = `Error al generar la transcripción: ${error.message}`;
     }
     
     const enhancedError = new Error(errorMessage);
     enhancedError.originalError = error;
     throw enhancedError;
+  } finally {
+    // Cerrar el stream si está abierto
+    if (audioFile && typeof audioFile.close === 'function') {
+      audioFile.close();
+    }
+    
+    // Registrar duración total del proceso
+    const endTime = Date.now();
+    console.log(`[${new Date().toISOString()}] Tiempo total de procesamiento: ${((endTime - startTime) / 1000).toFixed(2)}s`);
   }
 }
 
