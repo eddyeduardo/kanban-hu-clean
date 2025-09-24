@@ -66,9 +66,16 @@ const KanbanColumn = ({
       onDragOver={handleDragOver}
     >
       <div className="flex justify-between items-center mb-3 border-b-2 border-slate-300 pb-2">
-        <h2 className="text-lg font-semibold text-slate-700 select-none">
-          {column.name}
-        </h2>
+        <div className="flex items-center">
+          <h2 className="text-lg font-semibold text-slate-700 select-none">
+            {column.name}
+          </h2>
+          {stories.length > 0 && (
+            <span className="ml-2 px-2 py-0.5 bg-blue-100 text-blue-800 text-xs font-medium rounded-full">
+              {stories.filter(story => !!story.completedAt).length}/{stories.length}
+            </span>
+          )}
+        </div>
         <button 
           className="p-1 text-slate-500 hover:text-blue-600 hover:bg-slate-300 rounded-full"
           title="Añadir nueva historia"
