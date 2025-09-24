@@ -1,175 +1,153 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import axios from 'axios';
+import VideoUpload from './VideoUpload';
 
 const VideoTranscription = () => {
-  const [file, setFile] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [progress, setProgress] = useState(0);
   const [transcriptionResult, setTranscriptionResult] = useState(null);
   const [error, setError] = useState(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [processingProgress, setProcessingProgress] = useState(0);
 
-  const handleFileChange = (e) => {
-    const selectedFile = e.target.files[0];
-    if (selectedFile && selectedFile.type === 'video/mp4') {
-      setFile(selectedFile);
-      setError(null);
-    } else {
-      setFile(null);
-      setError('Por favor, selecciona un archivo MP4 válido.');
-    }
-  };
-
-  const testServerConnection = async () => {
+  // Función para descargar archivos
+  const downloadFile = useCallback((fileData) => {
+    if (!fileData) return;
+    
     try {
-      console.log('Verificando conexión con el servidor...');
-      const response = await axios.post('http://localhost:5000/api/transcription/test');
-      console.log('Conexión con el servidor establecida:', response.data);
-      return true;
-    } catch (err) {
-      console.error('Error al conectar con el servidor:', err);
-      setError(`Error de conexión: ${err.message}. Verifica que el servidor esté en ejecución.`);
-      return false;
-    }
-  };
+      const { content, filename } = fileData;
+      if (!content || !filename) {
+        console.error('Datos de archivo inválidos para descarga');
+        return;
+      }
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!file) {
-      setError('Por favor, selecciona un archivo MP4 válido.');
+      // Crear un enlace temporal para la descarga
+      const link = document.createElement('a');
+      link.href = `data:text/plain;charset=utf-8,${encodeURIComponent(content)}`;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (err) {
+      console.error('Error al descargar el archivo:', err);
+      setError(`Error al descargar el archivo: ${err.message}`);
+    }
+  }, []);
+
+  // Manejar la carga exitosa del archivo
+  const handleUploadComplete = useCallback(async (fileInfo) => {
+    if (!fileInfo?.fileId) {
+      setError('Error: No se pudo completar la carga del archivo');
       return;
     }
 
-    setIsLoading(true);
-    setProgress(0);
+    setIsProcessing(true);
     setError(null);
     setTranscriptionResult(null);
-    
-    // Verificar conexión con el servidor antes de intentar cargar el archivo
-    const serverConnected = await testServerConnection();
-    if (!serverConnected) {
-      setIsLoading(false);
-      return;
-    }
-
-    const formData = new FormData();
-    formData.append('video', file);
+    setProcessingProgress(0);
 
     try {
-      console.log('Enviando solicitud a la API de transcripción...');
-      console.log('Archivo a enviar:', file.name, file.size, file.type);
+      console.log('Iniciando proceso de transcripción para el archivo:', fileInfo.fileId);
       
-      // Verificar que el FormData contiene el archivo
-      console.log('FormData contiene:', formData.get('video') ? 'Archivo video presente' : 'Archivo video ausente');
-      
-      const response = await axios.post('http://localhost:5000/api/transcription/upload', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        },
-        onUploadProgress: (progressEvent) => {
-          const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-          setProgress(percentCompleted);
-          console.log(`Progreso de carga: ${percentCompleted}%`);
+      // Monitorear el progreso de la transcripción
+      const progressInterval = setInterval(async () => {
+        try {
+          const response = await axios.get(`http://localhost:5000/api/transcription/status/${fileInfo.fileId}`);
+          if (response.data?.progress) {
+            setProcessingProgress(response.data.progress);
+          }
+          if (response.data?.status === 'completed' || response.data?.status === 'failed') {
+            clearInterval(progressInterval);
+          }
+        } catch (err) {
+          console.error('Error al verificar el estado de la transcripción:', err);
         }
+      }, 2000);
+
+      // Iniciar la transcripción
+      const response = await axios.post('http://localhost:5000/api/transcription/process', {
+        fileId: fileInfo.fileId,
+        fileName: fileInfo.fileName
       });
 
-      console.log('Respuesta recibida:', response.data);
-      setTranscriptionResult(response.data);
+      clearInterval(progressInterval);
       
-      // Descargar automáticamente el archivo TXT
-      if (response.data && response.data.files && response.data.files.txt) {
-        console.log('Descargando automáticamente el archivo TXT...');
-        downloadFile(response.data.files.txt);
+      if (response.data.success) {
+        console.log('Transcripción completada:', response.data);
+        setTranscriptionResult(response.data);
+        setProcessingProgress(100);
+        
+        // Descargar automáticamente el archivo TXT si está disponible
+        if (response.data.files?.txt) {
+          downloadFile(response.data.files.txt);
+        }
+      } else {
+        throw new Error(response.data.error || 'Error desconocido al procesar la transcripción');
       }
     } catch (err) {
-      console.error('Error al procesar el video:', err);
-      console.error('Detalles del error:', {
-        message: err.message,
-        status: err.response?.status,
-        statusText: err.response?.statusText,
-        data: err.response?.data
-      });
-      
+      console.error('Error al procesar la transcripción:', err);
       setError(
         err.response?.data?.message || 
-        `Error ${err.response?.status || ''}: ${err.message}. Por favor, intenta de nuevo.`
+        `Error al procesar el video: ${err.message}. Por favor, intenta de nuevo.`
       );
     } finally {
-      setIsLoading(false);
+      setIsProcessing(false);
     }
-  };
+  }, [downloadFile]);
 
   // Función para descargar archivos usando un enlace temporal
-  const downloadFile = (filename) => {
+  const handleDownload = (filename) => {
+    if (!filename) return;
+    
+    // Remove any existing /api/transcription/download/ prefix if present
+    const cleanFilename = filename.replace(/^\/api\/transcription\/download\//, '');
+    
     const link = document.createElement('a');
-    link.href = `http://localhost:5000/api/transcription/download/${filename}`;
-    link.setAttribute('download', filename);
+    link.href = `http://localhost:5000/api/transcription/download/${cleanFilename}`;
+    link.setAttribute('download', cleanFilename);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
   };
 
-  const handleDownload = (filename) => {
-    downloadFile(filename);
-  };
-
   return (
-    <div className="bg-white p-6 rounded-lg shadow-sm">
-      <h2 className="text-xl font-semibold text-slate-700 mb-4">Transcripción de Video</h2>
+    <div className="max-w-4xl mx-auto p-6 bg-white rounded-lg shadow-md">
+      <h2 className="text-2xl font-bold mb-6 text-gray-800">Transcripción de Video</h2>
       
-      <form onSubmit={handleSubmit} className="mb-6">
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-slate-700 mb-2">
-            Selecciona un archivo MP4
-          </label>
-          <input
-            type="file"
-            accept="video/mp4"
-            onChange={handleFileChange}
-            className="block w-full text-sm text-slate-500
-              file:mr-4 file:py-2 file:px-4
-              file:rounded-md file:border-0
-              file:text-sm file:font-medium
-              file:bg-blue-50 file:text-blue-700
-              hover:file:bg-blue-100"
+      <div className="space-y-6">
+        <div>
+          <VideoUpload 
+            onUploadComplete={handleUploadComplete}
+            onError={(error) => setError(error)}
+            apiEndpoint="http://localhost:5000/api/transcription"
           />
-          {file && (
-            <p className="mt-2 text-sm text-slate-600">
-              Archivo seleccionado: {file.name} ({Math.round(file.size / 1024 / 1024)} MB)
-            </p>
+          
+          {error && (
+            <div className="mt-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+              {error}
+            </div>
           )}
         </div>
-        
-        <button
-          type="submit"
-          disabled={!file || isLoading}
-          className={`px-4 py-2 rounded-md text-white font-medium ${
-            !file || isLoading ? 'bg-blue-300' : 'bg-blue-600 hover:bg-blue-700'
-          }`}
-        >
-          {isLoading ? 'Procesando...' : 'Transcribir Video'}
-        </button>
-      </form>
-      
-      {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md mb-4">
-          {error}
-        </div>
-      )}
-      
-      {isLoading && (
-        <div className="mb-4">
-          <p className="text-sm text-slate-600 mb-2">Subiendo y procesando video: {progress}%</p>
-          <div className="w-full bg-slate-200 rounded-full h-2.5">
-            <div 
-              className="bg-blue-600 h-2.5 rounded-full" 
-              style={{ width: `${progress}%` }}
-            ></div>
+
+        {/* Mostrar estado del procesamiento */}
+        {isProcessing && (
+          <div className="mt-6 p-4 bg-blue-50 rounded-md">
+            <h3 className="text-lg font-medium text-blue-800 mb-2">Procesando video...</h3>
+            <div className="w-full bg-gray-200 rounded-full h-2.5">
+              <div
+                className="bg-blue-600 h-2.5 rounded-full transition-all duration-300"
+                style={{ width: `${processingProgress}%` }}
+              ></div>
+            </div>
+            <p className="mt-2 text-sm text-blue-700">
+              Progreso: {processingProgress}%
+              <br />
+              <span className="text-xs text-blue-600">
+                Este proceso puede tardar varios minutos dependiendo del tamaño del video.
+              </span>
+            </p>
           </div>
-          <p className="mt-2 text-sm text-slate-500">
-            Este proceso puede tardar varios minutos dependiendo del tamaño del video.
-          </p>
-        </div>
-      )}
+        )}
+      </div>
       
       {transcriptionResult && (
         <div className="mt-6">
