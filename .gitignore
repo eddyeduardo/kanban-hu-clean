@@ -1,1 +1,6 @@
 node_modules
+
+# Ignorar archivos subidos
+server/uploads/
+*.mp3
+*.mp4
