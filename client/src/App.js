@@ -41,6 +41,91 @@ function App() {
     }
   };
   
+  // Función para agregar columnas automáticamente basadas en el atributo usuario de las historias
+  const handleAutoAddColumns = async () => {
+    try {
+      setLoading(true);
+
+      // Obtener usuarios únicos de las historias (excluyendo vacíos y nulos)
+      const uniqueUsers = [...new Set(
+        stories
+          .map(story => story.user)
+          .filter(user => user && user.trim() !== '')
+      )];
+
+      if (uniqueUsers.length === 0) {
+        setLoading(false);
+        return { created: 0, assigned: 0, message: 'No hay usuarios en las historias' };
+      }
+
+      // Obtener nombres de columnas existentes
+      const existingColumnNames = columns.map(col => col.name.toLowerCase());
+
+      // Filtrar usuarios que no tienen columna creada
+      const usersWithoutColumn = uniqueUsers.filter(
+        user => !existingColumnNames.includes(user.toLowerCase())
+      );
+
+      // Crear columnas para cada usuario único que no tenga columna
+      const createdColumns = [];
+      for (const userName of usersWithoutColumn) {
+        const newColumn = {
+          name: userName,
+          jsonFileName: currentJsonFile || null
+        };
+        const response = await api.createColumn(newColumn);
+        createdColumns.push(response.data);
+      }
+
+      // Actualizar el estado con las nuevas columnas
+      const allColumns = [...columns, ...createdColumns];
+      if (createdColumns.length > 0) {
+        setColumns(allColumns);
+      }
+
+      // Asignar TODAS las historias a sus columnas correspondientes según el usuario
+      const updatedStories = [];
+      for (const story of stories) {
+        if (story.user && story.user.trim() !== '') {
+          // Buscar la columna que coincide con el usuario de la historia
+          const targetColumn = allColumns.find(
+            col => col.name.toLowerCase() === story.user.toLowerCase()
+          );
+
+          if (targetColumn) {
+            // Actualizar la historia con la columna correspondiente
+            const response = await api.updateStory(story._id, {
+              column: targetColumn._id
+            });
+            updatedStories.push(response.data);
+          }
+        }
+      }
+
+      // Actualizar el estado de las historias
+      if (updatedStories.length > 0) {
+        setStories(prevStories =>
+          prevStories.map(story => {
+            const updated = updatedStories.find(u => u._id === story._id);
+            return updated || story;
+          })
+        );
+      }
+
+      setLoading(false);
+      return {
+        created: createdColumns.length,
+        assigned: updatedStories.length,
+        message: `Se crearon ${createdColumns.length} columnas y se asignaron ${updatedStories.length} historias`
+      };
+    } catch (error) {
+      console.error('Error al crear columnas automáticamente:', error);
+      setError('Error al crear columnas: ' + (error.response?.data?.message || error.message));
+      setLoading(false);
+      throw error;
+    }
+  };
+
   // Función para manejar la adición de una nueva columna
   const handleAddColumn = async (columnName) => {
     try {
@@ -717,9 +802,10 @@ function App() {
             tabs={{
               'Kanban': (
                 <KanbanTab
-                  columns={columns} 
-                  stories={stories} 
+                  columns={columns}
+                  stories={stories}
                   onAddColumn={handleAddColumn}
+                  onAutoAddColumns={handleAutoAddColumns}
                   onStoryMove={handleStoryMove}
                   onOpenStoryModal={openStoryModal}
                   onCriterionCheck={handleCriterionCheck}

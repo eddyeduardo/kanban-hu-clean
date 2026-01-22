@@ -4,11 +4,12 @@ import SimpleKanban from './SimpleKanban';
 
 /**
  * KanbanTab component that groups the Kanban board and the add column form
- * 
+ *
  * @param {Object} props - Component props
  * @param {Array} props.columns - List of columns
  * @param {Array} props.stories - List of stories
  * @param {Function} props.onAddColumn - Function to handle adding a new column
+ * @param {Function} props.onAutoAddColumns - Function to handle auto-adding columns based on user attribute
  * @param {Function} props.onStoryMove - Function to handle moving stories
  * @param {Function} props.onOpenStoryModal - Function to handle opening the story modal
  * @param {Function} props.onCriterionCheck - Function to handle criterion check
@@ -17,17 +18,18 @@ import SimpleKanban from './SimpleKanban';
  * @param {Function} props.onDeleteStory - Function to handle story deletion
  * @param {String} props.currentJsonFile - Current JSON file name
  */
-const KanbanTab = ({ 
-  columns, 
-  stories, 
-  onAddColumn, 
-  onStoryMove, 
-  onOpenStoryModal, 
+const KanbanTab = ({
+  columns,
+  stories,
+  onAddColumn,
+  onAutoAddColumns,
+  onStoryMove,
+  onOpenStoryModal,
   onCriterionCheck,
   onCriterionDelete,
   onCriteriaReorder,
   onDeleteStory,
-  currentJsonFile 
+  currentJsonFile
 }) => {
   return (
     <div className="kanban-tab">
@@ -41,7 +43,12 @@ const KanbanTab = ({
       </h2>
       
       <div className="mb-4">
-        <AddColumnForm onAddColumn={onAddColumn} currentJsonFile={currentJsonFile} />
+        <AddColumnForm
+          onAddColumn={onAddColumn}
+          onAutoAddColumns={onAutoAddColumns}
+          currentJsonFile={currentJsonFile}
+          stories={stories}
+        />
       </div>
       
       <SimpleKanban 

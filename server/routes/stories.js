@@ -79,40 +79,42 @@ router.patch('/:id', async (req, res) => {
   try {
     const story = await Story.findById(req.params.id);
     if (!story) return res.status(404).json({ message: 'Story not found' });
-    
-    // Check if we're changing the column
-    if (req.body.column && req.body.column !== story.column.toString()) {
-      const targetColumn = await Column.findById(req.body.column);
+
+    // Buscar la columna destino si se especifica
+    let targetColumn = null;
+    if (req.body.column) {
+      targetColumn = await Column.findById(req.body.column);
       if (!targetColumn) return res.status(404).json({ message: 'Target column not found' });
-      
-      // Si estamos haciendo drag and drop, respetamos la posición enviada por el cliente
-      // Solo calculamos una nueva posición si no se especificó una posición o si no es un drag and drop
-      if (req.body.position === undefined) {
-        const maxPosition = await Story.findOne({ column: req.body.column }).sort({ position: -1 });
-        req.body.position = maxPosition ? maxPosition.position + 1 : 0;
+
+      // Si estamos cambiando de columna, calcular posición si no se especificó
+      if (req.body.column !== story.column?.toString()) {
+        if (req.body.position === undefined) {
+          const maxPosition = await Story.findOne({ column: req.body.column }).sort({ position: -1 });
+          req.body.position = maxPosition ? maxPosition.position + 1 : 0;
+        }
       }
     }
-    
+
     // Actualizar los campos básicos
     if (req.body.title) story.title = req.body.title;
-    
+
     // Actualizar id_historia si se proporciona (incluso si es null o vacío)
     if ('id_historia' in req.body) {
       story.id_historia = req.body.id_historia || undefined; // Usar undefined para eliminar el campo si es vacío
     }
-    
+
     // Actualizar user si se proporciona (incluso si es null o vacío) o si se está cambiando de columna
     if ('user' in req.body || req.body.column) {
       // Si se proporciona un usuario explícitamente, usarlo
       // Si no, usar el nombre de la columna como usuario
-      story.user = req.body.user || 
-                 (req.body.column ? targetColumn.name : undefined) || 
+      story.user = req.body.user ||
+                 (targetColumn ? targetColumn.name : undefined) ||
                  story.user;
-      
+
       console.log('Actualizando usuario de la historia:', {
         storyId: story._id,
         oldUser: story.user,
-        newUser: req.body.user || (req.body.column ? targetColumn.name : 'No cambiado'),
+        newUser: req.body.user || (targetColumn ? targetColumn.name : 'No cambiado'),
         columnChanged: !!req.body.column,
         newColumn: req.body.column
       });
