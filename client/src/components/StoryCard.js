@@ -1,152 +1,154 @@
 import React, { useState, useEffect } from 'react';
+import { FiChevronDown, FiChevronUp, FiUser, FiEdit2, FiTrash2, FiCheck } from 'react-icons/fi';
 import DraggableCriteriaList from './DraggableCriteriaList';
-import { FiChevronDown, FiChevronUp } from 'react-icons/fi';
 
 /**
- * StoryCard - Componente que representa una tarjeta de historia en el tablero Kanban
- * 
- * @param {Object} props - Propiedades del componente
- * @param {Object} props.story - Datos de la historia
- * @param {Function} props.onEdit - Función para editar la historia
- * @param {Function} props.onCriterionCheck - Función para manejar el cambio de estado de un criterio
- * @param {Function} props.onCriterionDelete - Función para manejar la eliminación de un criterio
- * @param {Function} props.onCriteriaReorder - Función para manejar el reordenamiento de criterios
- * @param {boolean} props.draggable - Indica si la tarjeta es arrastrable
- * @param {Function} props.onDragStart - Función para manejar el inicio del arrastre
- * @param {Function} props.onDragEnd - Función para manejar el fin del arrastre
- * @param {Function} props.onDelete - Función para manejar la eliminación de la historia
+ * StoryCard - Apple Design System
+ * Tarjeta de historia con diseño elegante y microinteracciones
  */
-const StoryCard = ({ 
-  story, 
-  onEdit, 
-  onCriterionCheck, 
-  onCriterionDelete, 
+const StoryCard = ({
+  story,
+  onEdit,
+  onCriterionCheck,
+  onCriterionDelete,
   onCriteriaReorder,
   onDragStart,
   onDragEnd,
   onDelete,
   index
 }) => {
-  // Efecto para mostrar los datos de la historia en la consola
-  useEffect(() => {
-    console.log('Datos de la historia:', story);
-  }, [story]);
-  const [isExpanded, setIsExpanded] = useState(false);
   const [isCriteriaExpanded, setIsCriteriaExpanded] = useState(false);
-  const [completedCriteria, setCompletedCriteria] = useState(0);
+  const [showActions, setShowActions] = useState(false);
+
   const totalCriteria = story.criteria ? story.criteria.length : 0;
-  
-  // Actualizar el contador de criterios completados cuando cambien los criterios
-  useEffect(() => {
-    if (story.criteria) {
-      const completed = story.criteria.filter(c => c.checked).length;
-      setCompletedCriteria(completed);
-    }
-  }, [story.criteria]);
-  
-  const toggleExpand = () => {
-    setIsExpanded(!isExpanded);
-  };
+  const completedCriteria = story.criteria ? story.criteria.filter(c => c.checked).length : 0;
+  const progress = totalCriteria > 0 ? (completedCriteria / totalCriteria) * 100 : 0;
+  const isCompleted = !!story.completedAt;
 
   const handleDragStart = (e) => {
     e.stopPropagation();
+    e.currentTarget.classList.add('dragging');
     if (onDragStart) onDragStart(e, story);
   };
 
   const handleDragEnd = (e) => {
     e.stopPropagation();
+    e.currentTarget.classList.remove('dragging');
     if (onDragEnd) onDragEnd(e);
   };
 
   return (
-    <div 
-      className={`bg-white rounded-lg shadow p-4 mb-3 border-l-4 ${
-        story.completedAt ? 'border-green-500' : 'border-blue-500'
-      } cursor-grab active:cursor-grabbing`}
+    <div
+      className={`
+        kanban-card card p-4
+        border-l-[3px]
+        ${isCompleted ? 'border-l-success-500 bg-success-50/30' : 'border-l-primary-500'}
+        cursor-grab active:cursor-grabbing
+        hover:shadow-apple-md
+        transition-all duration-200 ease-apple
+      `}
       draggable={true}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
-      onClick={toggleExpand}
-      title="Arrastrar para mover"
+      onMouseEnter={() => setShowActions(true)}
+      onMouseLeave={() => setShowActions(false)}
     >
-      <div className="flex justify-between items-start mb-2">
-        <div className="flex-grow pr-2">
-          <h3 className="font-semibold text-blue-600">
+      {/* Header */}
+      <div className="flex justify-between items-start gap-3 mb-2">
+        <div className="flex-1 min-w-0">
+          <h3 className={`
+            font-semibold text-sm leading-snug
+            ${isCompleted ? 'text-success-700' : 'text-neutral-900'}
+          `}>
             {story.title || 'Historia sin título'}
           </h3>
+
+          {/* User badge */}
           {story.user && (
-            <div className="flex items-center mt-1">
-              <span className="inline-flex items-center bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs px-2 py-0.5 rounded-full border border-blue-200 transition-colors duration-200">
-                <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                </svg>
+            <div className="flex items-center mt-2">
+              <span className="badge-primary">
+                <FiUser className="w-3 h-3" />
                 {story.user}
               </span>
             </div>
           )}
         </div>
-        <div 
-          className="flex-shrink-0 group relative"
-          title={`ID: ${story.id_historia || story._id || 'N/A'}`}
-        >
+
+        {/* Story ID */}
+        <div className="flex-shrink-0">
           <span className="
-            text-xs 
-            bg-blue-50 
-            hover:bg-blue-100 
-            text-blue-700 
-            px-2 py-1 
-            rounded 
-            font-mono 
-            border border-blue-200 
-            transition-colors 
-            duration-200
-            flex items-center
-            cursor-help
+            text-[10px] font-mono font-medium
+            px-2 py-1 rounded-md
+            bg-neutral-100 text-neutral-500
+            border border-neutral-200
           ">
             {story.id_historia || story._id?.substring(0, 8) || 'N/A'}
-            {story.id_historia && (
-              <span className="ml-1 text-blue-400 group-hover:text-blue-600">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
-                  <path d="M8 2a1 1 0 000 2h2a1 1 0 100-2H8z" />
-                  <path d="M3 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v6h-4.586l1.293-1.293a1 1 0 00-1.414-1.414l-3 3a1 1 0 000 1.414l3 3a1 1 0 001.414-1.414L10.414 13H15v3a2 2 0 01-2 2H5a2 2 0 01-2-2V5zM15 11h2a1 1 0 100-2h-2v2z" />
-                </svg>
-              </span>
-            )}
           </span>
         </div>
       </div>
-      
-      {story.completedAt && (
-        <div className="text-xs text-green-600 mb-2">
-          Completada el: {new Date(story.completedAt).toLocaleDateString()}
+
+      {/* Completed date */}
+      {isCompleted && (
+        <div className="flex items-center gap-1.5 text-xs text-success-600 mb-2">
+          <FiCheck className="w-3.5 h-3.5" />
+          <span>Completada el {new Date(story.completedAt).toLocaleDateString()}</span>
         </div>
       )}
-      
-      <div className="text-sm text-slate-600 mb-2">
-        {story.description && story.description.length > 100 && !isExpanded
-          ? `${story.description.substring(0, 100)}...`
-          : story.description}
-      </div>
-      
-      {story.criteria && story.criteria.length > 0 && (
-        <div className="mt-2">
-          <div 
-            className="flex items-center text-sm text-slate-600 cursor-pointer hover:text-blue-600"
+
+      {/* Description */}
+      {story.description && (
+        <p className="text-sm text-neutral-600 mb-3 line-clamp-2">
+          {story.description}
+        </p>
+      )}
+
+      {/* Criteria section */}
+      {totalCriteria > 0 && (
+        <div className="mt-3 pt-3 border-t border-neutral-100">
+          {/* Criteria header with progress */}
+          <button
+            className="
+              w-full flex items-center justify-between
+              text-xs text-neutral-500 hover:text-neutral-700
+              transition-colors duration-150
+            "
             onClick={(e) => {
               e.stopPropagation();
               setIsCriteriaExpanded(!isCriteriaExpanded);
             }}
           >
-            {isCriteriaExpanded ? (
-              <FiChevronUp className="mr-1" />
-            ) : (
-              <FiChevronDown className="mr-1" />
-            )}
-            <span>Criterios de aceptación</span>
+            <div className="flex items-center gap-2">
+              {isCriteriaExpanded ? (
+                <FiChevronUp className="w-3.5 h-3.5" />
+              ) : (
+                <FiChevronDown className="w-3.5 h-3.5" />
+              )}
+              <span className="font-medium">Criterios de aceptación</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className={`
+                font-medium
+                ${completedCriteria === totalCriteria ? 'text-success-600' : ''}
+              `}>
+                {completedCriteria}/{totalCriteria}
+              </span>
+            </div>
+          </button>
+
+          {/* Mini progress bar */}
+          <div className="mt-2 h-1 bg-neutral-100 rounded-full overflow-hidden">
+            <div
+              className={`
+                h-full rounded-full transition-all duration-300 ease-apple
+                ${completedCriteria === totalCriteria ? 'bg-success-500' : 'bg-primary-500'}
+              `}
+              style={{ width: `${progress}%` }}
+            />
           </div>
-          
+
+          {/* Criteria list */}
           {isCriteriaExpanded && (
-            <div className="mt-1">
+            <div className="mt-3 animate-fade-in">
               <DraggableCriteriaList
                 criteria={story.criteria}
                 onCriterionCheck={onCriterionCheck}
@@ -158,36 +160,36 @@ const StoryCard = ({
           )}
         </div>
       )}
-      
-      <div className="mt-2 flex justify-between items-center text-xs text-slate-500">
-        <span>
-          {story.criteria ? story.criteria.filter(c => c.checked).length : 0} / {story.criteria?.length || 0} criterios
-        </span>
-        <div className="flex space-x-2">
-          <button 
-            onClick={(e) => {
-              e.stopPropagation();
-              if (window.confirm('¿Estás seguro de que deseas eliminar esta historia?')) {
-                onDelete(story._id);
-              }
-            }}
-            className="text-red-600 hover:text-red-800 hover:underline"
-            title="Eliminar historia"
-          >
-            Borrar
-          </button>
-          <span>|</span>
-          <button 
-            onClick={(e) => {
-              e.stopPropagation();
-              onEdit(story);
-            }}
-            className="text-blue-600 hover:text-blue-800 hover:underline"
-            title="Editar historia"
-          >
-            Editar
-          </button>
-        </div>
+
+      {/* Actions */}
+      <div className={`
+        mt-3 pt-3 border-t border-neutral-100
+        flex justify-end gap-1
+        transition-opacity duration-200
+        ${showActions ? 'opacity-100' : 'opacity-0'}
+      `}>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            if (window.confirm('¿Eliminar esta historia?')) {
+              onDelete(story._id);
+            }
+          }}
+          className="btn-icon w-7 h-7 text-neutral-400 hover:text-danger-500 hover:bg-danger-50"
+          title="Eliminar"
+        >
+          <FiTrash2 className="w-3.5 h-3.5" />
+        </button>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onEdit(story);
+          }}
+          className="btn-icon w-7 h-7 text-neutral-400 hover:text-primary-500 hover:bg-primary-50"
+          title="Editar"
+        >
+          <FiEdit2 className="w-3.5 h-3.5" />
+        </button>
       </div>
     </div>
   );

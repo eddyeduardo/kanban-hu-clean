@@ -2,60 +2,325 @@
 @tailwind components;
 @tailwind utilities;
 
-body {
-  margin: 0;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  background-color: #f1f5f9;
+/* ============================================
+   Apple Design System - Global Styles
+   Inspirado en: Jony Ive, Dieter Rams, HIG
+   ============================================ */
+
+@layer base {
+  /* Reset y configuración base */
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text',
+      'Helvetica Neue', Helvetica, Arial, sans-serif;
+    background-color: #f5f5f7;
+    color: #1d1d1f;
+    line-height: 1.5;
+    letter-spacing: -0.011em;
+  }
+
+  /* Tipografía base */
+  h1, h2, h3, h4, h5, h6 {
+    font-weight: 600;
+    letter-spacing: -0.022em;
+    color: #1d1d1f;
+  }
+
+  /* Focus visible para accesibilidad AAA */
+  *:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 4px rgba(10, 132, 255, 0.3);
+    border-radius: 6px;
+  }
+
+  /* Scrollbar estilo Apple */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: #d2d2d7;
+    border-radius: 4px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: #aeaeb2;
+  }
+
+  /* Selection */
+  ::selection {
+    background-color: rgba(10, 132, 255, 0.2);
+    color: inherit;
+  }
 }
 
-.kanban-card.dragging {
-  opacity: 0.5;
-  border: 2px dashed #cbd5e0;
+@layer components {
+  /* ============================================
+     Botones - Sistema unificado
+     ============================================ */
+
+  .btn {
+    @apply inline-flex items-center justify-center gap-2;
+    @apply font-medium text-sm;
+    @apply px-4 py-2.5;
+    @apply rounded-apple;
+    @apply transition-all duration-200 ease-apple;
+    @apply focus:outline-none focus-visible:ring-4 focus-visible:ring-primary-500/30;
+    @apply disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply select-none;
+  }
+
+  .btn-primary {
+    @apply btn;
+    @apply bg-primary-500 text-white;
+    @apply hover:bg-primary-600 active:bg-primary-700;
+    @apply shadow-apple-sm hover:shadow-apple;
+  }
+
+  .btn-secondary {
+    @apply btn;
+    @apply bg-neutral-100 text-neutral-700;
+    @apply hover:bg-neutral-200 active:bg-neutral-300;
+    @apply border border-neutral-200;
+  }
+
+  .btn-success {
+    @apply btn;
+    @apply bg-success-500 text-white;
+    @apply hover:bg-success-600 active:bg-success-700;
+    @apply shadow-apple-sm hover:shadow-apple;
+  }
+
+  .btn-danger {
+    @apply btn;
+    @apply bg-danger-500 text-white;
+    @apply hover:bg-danger-600 active:bg-danger-700;
+  }
+
+  .btn-ghost {
+    @apply btn;
+    @apply bg-transparent text-neutral-600;
+    @apply hover:bg-neutral-100 active:bg-neutral-200;
+  }
+
+  .btn-icon {
+    @apply p-2 rounded-full;
+    @apply text-neutral-500 hover:text-neutral-700;
+    @apply hover:bg-neutral-100 active:bg-neutral-200;
+    @apply transition-all duration-200 ease-apple;
+  }
+
+  /* ============================================
+     Cards - Contenedores elevados
+     ============================================ */
+
+  .card {
+    @apply bg-white rounded-apple-lg;
+    @apply shadow-apple;
+    @apply transition-shadow duration-300 ease-apple;
+  }
+
+  .card-elevated {
+    @apply card;
+    @apply hover:shadow-apple-md;
+  }
+
+  .card-interactive {
+    @apply card-elevated;
+    @apply cursor-pointer;
+    @apply hover:translate-y-[-1px];
+    @apply active:translate-y-0 active:shadow-apple-sm;
+    @apply transition-all duration-200 ease-apple;
+  }
+
+  /* ============================================
+     Inputs - Campos de formulario
+     ============================================ */
+
+  .input {
+    @apply w-full px-4 py-2.5;
+    @apply bg-white border border-neutral-200;
+    @apply rounded-apple;
+    @apply text-neutral-900 placeholder:text-neutral-400;
+    @apply transition-all duration-200 ease-apple;
+    @apply focus:outline-none focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10;
+  }
+
+  .input-label {
+    @apply block text-sm font-medium text-neutral-700 mb-1.5;
+  }
+
+  /* ============================================
+     Badges - Etiquetas informativas
+     ============================================ */
+
+  .badge {
+    @apply inline-flex items-center gap-1;
+    @apply px-2.5 py-1;
+    @apply text-xs font-medium;
+    @apply rounded-full;
+    @apply transition-colors duration-200;
+  }
+
+  .badge-primary {
+    @apply badge;
+    @apply bg-primary-50 text-primary-700 border border-primary-100;
+  }
+
+  .badge-success {
+    @apply badge;
+    @apply bg-success-50 text-success-700 border border-success-100;
+  }
+
+  .badge-warning {
+    @apply badge;
+    @apply bg-warning-50 text-warning-700 border border-warning-100;
+  }
+
+  .badge-neutral {
+    @apply badge;
+    @apply bg-neutral-100 text-neutral-600 border border-neutral-200;
+  }
+
+  /* ============================================
+     Checkbox - Estilo Apple
+     ============================================ */
+
+  .checkbox {
+    @apply w-4 h-4;
+    @apply rounded;
+    @apply border-2 border-neutral-300;
+    @apply text-primary-500;
+    @apply transition-all duration-150;
+    @apply focus:ring-2 focus:ring-primary-500/30 focus:ring-offset-0;
+    @apply checked:bg-primary-500 checked:border-primary-500;
+  }
 }
 
-.kanban-column-content {
-  min-height: 100px;
-  padding-bottom: 1rem;
-}
+@layer utilities {
+  /* ============================================
+     Utilidades de texto
+     ============================================ */
 
-.kanban-column.drag-over .kanban-column-content {
-  background-color: #e2e8f0;
-  outline: 2px dashed #94a3b8;
-}
+  .text-balance {
+    text-wrap: balance;
+  }
 
-.kanban-card h3,
-.kanban-card p,
-.kanban-card li label {
-  user-select: none;
-}
+  .text-gradient {
+    @apply bg-gradient-to-r from-primary-500 to-primary-700;
+    @apply bg-clip-text text-transparent;
+  }
 
-.text-content.checked {
-  text-decoration: line-through;
-  color: #94a3b8;
-}
+  /* ============================================
+     Efectos de vidrio (glassmorphism)
+     ============================================ */
 
-.items-list li {
-  display: flex;
-  align-items: center;
-  margin-bottom: 0.25rem;
-}
+  .glass {
+    @apply bg-white/80 backdrop-blur-apple;
+    @apply border border-white/20;
+  }
 
-.items-list input[type="checkbox"] {
-  margin-right: 0.5rem;
-  flex-shrink: 0;
-}
+  .glass-dark {
+    @apply bg-neutral-900/80 backdrop-blur-apple;
+    @apply border border-white/10;
+  }
 
-#kanbanBoardContainer {
-  display: flex;
-  overflow-x: auto;
-  padding-bottom: 1rem;
-}
+  /* ============================================
+     Animaciones de entrada
+     ============================================ */
 
-.kanban-column {
-  flex: 0 0 300px;
-  margin-right: 1.5rem;
+  .animate-in {
+    animation: fadeIn 0.3s ease-out, slideUp 0.3s ease-out;
+  }
+
+  /* ============================================
+     Kanban específico
+     ============================================ */
+
+  .kanban-card {
+    @apply select-none;
+  }
+
+  .kanban-card.dragging {
+    @apply opacity-60;
+    @apply shadow-apple-lg;
+    @apply rotate-2;
+    @apply scale-105;
+  }
+
+  .kanban-column-content {
+    @apply min-h-[120px] pb-4;
+    @apply transition-colors duration-200;
+  }
+
+  .kanban-column.drag-over .kanban-column-content {
+    @apply bg-primary-50/50;
+    @apply ring-2 ring-primary-200 ring-inset;
+    @apply rounded-apple;
+  }
+
+  .kanban-card h3,
+  .kanban-card p,
+  .kanban-card li label {
+    @apply select-none;
+  }
+
+  #kanbanBoardContainer {
+    @apply flex overflow-x-auto pb-4;
+    @apply scroll-smooth;
+    scrollbar-width: thin;
+  }
+
+  .kanban-column {
+    @apply flex-shrink-0;
+    @apply w-[320px];
+    @apply mr-5;
+  }
+
+  /* Criterios completados */
+  .text-content.checked {
+    @apply line-through text-neutral-400;
+  }
+
+  .items-list li {
+    @apply flex items-center mb-1;
+  }
+
+  .items-list input[type="checkbox"] {
+    @apply mr-2 flex-shrink-0;
+  }
+
+  /* ============================================
+     Transiciones de página
+     ============================================ */
+
+  .page-transition {
+    @apply transition-opacity duration-300 ease-apple;
+  }
+
+  .page-enter {
+    @apply opacity-0;
+  }
+
+  .page-enter-active {
+    @apply opacity-100;
+  }
 }

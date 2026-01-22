@@ -765,18 +765,20 @@ function App() {
   };
 
   return (
-    <div className="bg-slate-100 text-slate-800 p-4 md:p-8 min-h-screen">
-      <div className="container mx-auto">
+    <div className="bg-neutral-100 text-neutral-900 min-h-screen">
+      <div className="max-w-[1800px] mx-auto px-4 md:px-8 py-6">
         <Header />
 
         {error && (
-          <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-md">
-            {error}
-            <button 
-              className="ml-2 font-bold"
+          <div className="mb-6 p-4 bg-danger-50 text-danger-700 rounded-apple-lg border border-danger-100 flex items-center justify-between animate-fade-in">
+            <span>{error}</span>
+            <button
+              className="ml-4 p-1 hover:bg-danger-100 rounded-full transition-colors"
               onClick={() => setError('')}
             >
-              ×
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
             </button>
           </div>
         )}

@@ -1,29 +1,18 @@
 import React, { useMemo } from 'react';
+import { FiPlus } from 'react-icons/fi';
 import StoryCard from './StoryCard';
 import { sortStoriesWithCompletedLast } from '../utils/storyUtils';
 
 /**
- * KanbanColumn component represents a single column in the Kanban board
- * 
- * @param {Object} props - Component props
- * @param {Object} props.column - Column data
- * @param {Array} props.stories - Stories in this column
- * @param {Function} props.onOpenStoryModal - Function to open story modal
- * @param {Function} props.onCriterionCheck - Function to handle criterion check status change
- * @param {Function} props.onCriterionDelete - Function to handle criterion deletion
- * @param {Function} props.onCriteriaReorder - Function to handle criteria reordering
- * @param {Function} props.onDrop - Function to handle drop event
- * @param {Function} props.onDragOver - Function to handle drag over event
- * @param {Function} props.onDragStart - Function to handle drag start
- * @param {Function} props.onDragEnd - Function to handle drag end
- * @param {Function} props.onDelete - Function to handle story deletion
+ * KanbanColumn component - Apple Design System
+ * Columna de Kanban con diseño limpio y minimalista
  */
-const KanbanColumn = ({ 
-  column, 
-  stories, 
-  onOpenStoryModal, 
-  onCriterionCheck, 
-  onCriterionDelete, 
+const KanbanColumn = ({
+  column,
+  stories,
+  onOpenStoryModal,
+  onCriterionCheck,
+  onCriterionDelete,
   onCriteriaReorder,
   onDrop,
   onDragOver,
@@ -31,65 +20,76 @@ const KanbanColumn = ({
   onDragEnd,
   onDelete
 }) => {
-  // No necesitamos manejar el arrastre aquí, ya que ahora lo maneja DraggableColumn
-
-  // Prevenir el comportamiento por defecto para permitir el drop
   const handleDragOver = (e) => {
     e.preventDefault();
     e.stopPropagation();
     e.dataTransfer.dropEffect = 'move';
   };
 
-  // Manejar el drop de historias
   const handleDrop = (e) => {
     e.preventDefault();
     e.stopPropagation();
-    
-    // Verificar si es un arrastre de historia (no de columna)
     const data = e.dataTransfer.getData('text/plain');
     if (!data.startsWith('column:') && onDrop) {
       onDrop(e, column._id);
     }
   };
 
-  // Sort stories with completed ones at the end
   const sortedStories = useMemo(() => {
     return sortStoriesWithCompletedLast(stories);
   }, [stories]);
 
+  const completedCount = stories.filter(story => !!story.completedAt).length;
+  const totalCount = stories.length;
+  const progress = totalCount > 0 ? (completedCount / totalCount) * 100 : 0;
+
   return (
-    <div 
-      className="kanban-column bg-slate-200 p-3 rounded-lg shadow flex-shrink-0" 
-      style={{ width: '300px', margin: '0 0.5rem' }}
+    <div
+      className="kanban-column bg-neutral-100/80 rounded-apple-xl flex-shrink-0 flex flex-col"
+      style={{ width: '320px' }}
       data-column-id={column._id}
       onDrop={handleDrop}
       onDragOver={handleDragOver}
     >
-      <div className="flex justify-between items-center mb-3 border-b-2 border-slate-300 pb-2">
-        <div className="flex items-center">
-          <h2 className="text-lg font-semibold text-slate-700 select-none">
-            {column.name}
-          </h2>
-          {stories.length > 0 && (
-            <span className="ml-2 px-2 py-0.5 bg-blue-100 text-blue-800 text-xs font-medium rounded-full">
-              {stories.filter(story => !!story.completedAt).length}/{stories.length}
-            </span>
-          )}
+      {/* Column Header */}
+      <div className="p-4 pb-3">
+        <div className="flex justify-between items-start mb-2">
+          <div className="flex-1 min-w-0">
+            <h2 className="text-base font-semibold text-neutral-900 truncate">
+              {column.name}
+            </h2>
+          </div>
+          <div className="flex items-center gap-2 ml-2">
+            {totalCount > 0 && (
+              <span className="badge-primary text-xs">
+                {completedCount}/{totalCount}
+              </span>
+            )}
+            <button
+              className="btn-icon w-8 h-8"
+              title="Agregar historia"
+              onClick={() => onOpenStoryModal(null, column._id)}
+            >
+              <FiPlus className="w-4 h-4" />
+            </button>
+          </div>
         </div>
-        <button 
-          className="p-1 text-slate-500 hover:text-blue-600 hover:bg-slate-300 rounded-full"
-          title="Añadir nueva historia"
-          onClick={() => onOpenStoryModal(null, column._id)}
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5">
-            <path d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5v-4.5z" />
-          </svg>
-        </button>
+
+        {/* Progress bar */}
+        {totalCount > 0 && (
+          <div className="h-1 bg-neutral-200 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-success-500 rounded-full transition-all duration-500 ease-apple"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+        )}
       </div>
-      
-      <div className="kanban-column-content space-y-3 min-h-[50px]">
+
+      {/* Column Content */}
+      <div className="kanban-column-content flex-1 px-3 pb-3 space-y-2.5 overflow-y-auto">
         {sortedStories.map((story, index) => (
-          <StoryCard 
+          <StoryCard
             key={story._id}
             story={story}
             index={index}
@@ -102,6 +102,16 @@ const KanbanColumn = ({
             onDelete={onDelete}
           />
         ))}
+
+        {/* Empty state */}
+        {sortedStories.length === 0 && (
+          <div className="flex flex-col items-center justify-center py-8 text-neutral-400">
+            <div className="w-12 h-12 rounded-full bg-neutral-200 flex items-center justify-center mb-3">
+              <FiPlus className="w-5 h-5" />
+            </div>
+            <p className="text-sm">Sin historias</p>
+          </div>
+        )}
       </div>
     </div>
   );

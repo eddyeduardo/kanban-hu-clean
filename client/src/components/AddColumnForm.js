@@ -1,13 +1,9 @@
 import React, { useState } from 'react';
+import { FiPlus, FiZap } from 'react-icons/fi';
 
 /**
- * AddColumnForm component allows users to add a new column
- *
- * @param {Object} props - Component props
- * @param {Function} props.onAddColumn - Function to handle column addition
- * @param {Function} props.onAutoAddColumns - Function to handle auto-adding columns based on user attribute
- * @param {String} props.currentJsonFile - Current JSON file name (if any)
- * @param {Array} props.stories - List of stories to extract users from
+ * AddColumnForm component - Apple Design System
+ * Formulario limpio con feedback visual claro
  */
 const AddColumnForm = ({ onAddColumn, onAutoAddColumns, currentJsonFile, stories }) => {
   const [columnName, setColumnName] = useState('');
@@ -15,7 +11,6 @@ const AddColumnForm = ({ onAddColumn, onAutoAddColumns, currentJsonFile, stories
 
   const handleSubmit = (e) => {
     e.preventDefault();
-
     if (columnName.trim()) {
       onAddColumn(columnName.trim());
       setColumnName('');
@@ -24,7 +19,6 @@ const AddColumnForm = ({ onAddColumn, onAutoAddColumns, currentJsonFile, stories
 
   const handleAutoAdd = async () => {
     if (!onAutoAddColumns) return;
-
     setIsAutoAdding(true);
     try {
       await onAutoAddColumns();
@@ -35,49 +29,64 @@ const AddColumnForm = ({ onAddColumn, onAutoAddColumns, currentJsonFile, stories
     }
   };
 
-  // Contar usuarios únicos en las historias
   const uniqueUsersCount = stories
     ? [...new Set(stories.map(s => s.user).filter(u => u && u.trim() !== ''))].length
     : 0;
 
   return (
-    <div className="mb-8 p-4 bg-white rounded-lg shadow-md">
-      <h3 className="text-lg font-semibold text-slate-700 mb-2">
-        Añadir Nueva Columna
-        {currentJsonFile && (
-          <span className="ml-2 text-sm font-normal text-blue-600">
-            (Proyecto: {currentJsonFile})
-          </span>
-        )}
-        {!currentJsonFile && (
-          <span className="ml-2 text-sm font-normal text-slate-500">
-            (Columna por defecto)
-          </span>
-        )}
-      </h3>
-      <form onSubmit={handleSubmit} className="flex space-x-2">
-        <input
-          type="text"
-          value={columnName}
-          onChange={(e) => setColumnName(e.target.value)}
-          placeholder={currentJsonFile ? "Nombre de la columna" : "Nombre de la columna por defecto"}
-          className="flex-grow p-2 border border-slate-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-        />
+    <div className="card p-5 mb-6">
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <h3 className="text-lg font-semibold text-neutral-900">
+            Nueva Columna
+          </h3>
+          {currentJsonFile && (
+            <p className="text-sm text-neutral-500 mt-0.5">
+              Proyecto: <span className="text-primary-600 font-medium">{currentJsonFile}</span>
+            </p>
+          )}
+        </div>
+      </div>
+
+      <form onSubmit={handleSubmit} className="flex gap-3">
+        <div className="flex-1">
+          <input
+            type="text"
+            value={columnName}
+            onChange={(e) => setColumnName(e.target.value)}
+            placeholder="Nombre de la columna..."
+            className="input"
+          />
+        </div>
+
         <button
           type="submit"
-          className="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 font-semibold"
+          disabled={!columnName.trim()}
+          className="btn-primary"
         >
-          Añadir Columna
+          <FiPlus className="w-4 h-4" />
+          <span className="hidden sm:inline">Crear</span>
         </button>
+
         {currentJsonFile && onAutoAddColumns && (
           <button
             type="button"
             onClick={handleAutoAdd}
             disabled={isAutoAdding || uniqueUsersCount === 0}
-            className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 font-semibold disabled:bg-blue-300 disabled:cursor-not-allowed"
-            title={uniqueUsersCount === 0 ? "No hay usuarios en las historias" : `Crear columnas para ${uniqueUsersCount} usuarios`}
+            className="btn-secondary group"
+            title={uniqueUsersCount === 0
+              ? "No hay usuarios en las historias"
+              : `Crear columnas para ${uniqueUsersCount} usuarios`}
           >
-            {isAutoAdding ? 'Agregando...' : 'Agregar automáticamente'}
+            <FiZap className={`w-4 h-4 ${isAutoAdding ? 'animate-pulse' : 'group-hover:text-primary-500'}`} />
+            <span className="hidden sm:inline">
+              {isAutoAdding ? 'Procesando...' : 'Auto'}
+            </span>
+            {uniqueUsersCount > 0 && !isAutoAdding && (
+              <span className="ml-1 px-1.5 py-0.5 text-xs bg-primary-100 text-primary-700 rounded-full">
+                {uniqueUsersCount}
+              </span>
+            )}
           </button>
         )}
       </form>

@@ -1,13 +1,28 @@
 import React from 'react';
 
 /**
- * Header component for the application
+ * Header component - Apple Design System
+ * Minimalista, claro, con jerarquía tipográfica definida
  */
 const Header = () => {
   return (
-    <header className="mb-8 text-center">
-      <h1 className="text-3xl md:text-4xl font-bold text-slate-700">Tablero Kanban con Asignaciones</h1>
-      <p className="text-slate-500 mt-2">Sube un JSON o gestiona historias y columnas.</p>
+    <header className="mb-10 pt-2">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl md:text-4xl font-semibold text-neutral-900 tracking-tight">
+            Kanban
+          </h1>
+          <p className="text-neutral-500 mt-1 text-base">
+            Gestiona historias de usuario y asignaciones
+          </p>
+        </div>
+        <div className="hidden md:flex items-center gap-2">
+          <span className="badge-neutral">
+            <span className="w-2 h-2 bg-success-500 rounded-full animate-pulse-soft"></span>
+            Sincronizado
+          </span>
+        </div>
+      </div>
     </header>
   );
 };
