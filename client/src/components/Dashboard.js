@@ -1,143 +1,43 @@
 import React, { useMemo } from 'react';
-import { 
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, 
-  ResponsiveContainer, AreaChart, Area, BarChart, Bar, Cell 
+import {
+  ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Cell
 } from 'recharts';
-import { User, CheckCircle, Download } from 'react-feather';
+import { FiUser, FiCheckCircle, FiDownload, FiTrendingUp, FiClock, FiLayers, FiTarget } from 'react-icons/fi';
 import * as XLSX from 'xlsx';
 
-// Tooltip personalizado para los gráficos Burn Down
-const CustomTooltip = ({ active, payload, label }) => {
-  if (active && payload && payload.length) {
-    return (
-      <div style={{ background: '#fff', border: '1px solid #ccc', padding: 10, borderRadius: 6 }}>
-        <strong>Fecha: {label}</strong>
-        <ul style={{ margin: 0, padding: 0, listStyle: 'none' }}>
-          {payload.map((entry, idx) => (
-            <li key={idx} style={{ color: entry.color, fontWeight: 'bold' }}>
-              {entry.name}: {entry.value}
-            </li>
-          ))}
-        </ul>
-      </div>
-    );
-  }
-  return null;
-};
-
-
-// Función para crear datos de ejemplo para el Burn Down Chart
-// totalCriteria debe ser el valor real de criterios para la columna
-const createExampleBurnDownData = (startDate, endDate, totalCriteria) => {
-  const dateArray = [];
-  // Normalizar fechas de entrada a medianoche UTC para evitar desfases
-  const start = new Date(startDate);
-  start.setHours(0, 0, 0, 0);
-  const end = new Date(endDate);
-  end.setHours(0, 0, 0, 0);
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  // Generar todas las fechas entre start y end (ambos inclusive, sin desfase)
-  let loopDate = new Date(start);
-  while (loopDate <= end) {
-    // Usar formato ISO YYYY-MM-DD para fechas en el eje X y los datos
-    const isoDate = loopDate.toISOString().slice(0, 10); // YYYY-MM-DD
-    dateArray.push({
-      dateStr: isoDate,
-      date: new Date(loopDate.getTime())
-    });
-    loopDate.setDate(loopDate.getDate() + 1);
-  }
-
-  // Calcular la pendiente para la línea ideal
-  const totalDays = dateArray.length - 1; // Restar 1 para que el último día sea exactamente 0
-  const criteriosPerDay = totalDays > 0 ? totalCriteria / totalDays : totalCriteria;
-  
-  // Crear datos para el gráfico
-  console.log('DEBUG dateArray:', dateArray);
-  // Mostrar también el startDate y endDate que entran a la función
-  console.log('DEBUG createExampleBurnDownData startDate:', startDate, 'endDate:', endDate);
-  return dateArray.map((dateObj, index) => {
-    const { dateStr, date } = dateObj;
-    const dataPoint = { date: dateStr };
-    
-    // Línea ideal: comienza con el total de criterios y disminuye linealmente hasta 0
-    if (index === 0) {
-      // Primer día: exactamente el total de criterios
-      dataPoint['Ideal'] = totalCriteria;
-    } else if (index === dateArray.length - 1) {
-      // Último día: exactamente 0
-      dataPoint['Ideal'] = 0;
-    } else {
-      // Días intermedios: disminución lineal
-      const idealRemaining = totalCriteria - (index * criteriosPerDay);
-      dataPoint['Ideal'] = Math.round(idealRemaining * 100) / 100;
-    }
-    
-    // Línea real: solo mostrar datos hasta la fecha actual
-    if (date <= today) {
-      if (index === 0) {
-        // Primer día: exactamente el total de criterios
-        dataPoint['Real'] = totalCriteria;
-      } else {
-        // Calcular progreso real hasta hoy
-        const daysElapsed = Math.min(index, dateArray.findIndex(d => d.date > today));
-        const progress = daysElapsed / totalDays;
-        const randomFactor = 0.8 + (Math.random() * 0.4); // Entre 0.8 y 1.2
-        const realProgress = progress < 0.3 ? progress * 0.5 : progress * 1.2;
-        const realRemaining = Math.max(0, totalCriteria - (totalCriteria * realProgress * randomFactor));
-        dataPoint['Real'] = Math.round(realRemaining);
-      }
-    }
-    // No incluir datos de 'Real' para fechas futuras
-    
-    return dataPoint;
-  });
-};
-
 /**
- * Dashboard component for displaying project statistics and metrics
- * 
- * @param {Object} props - Component props
- * @param {Array} props.stories - List of stories
- * @param {Array} props.columns - List of columns
- * @param {String} props.currentJsonFile - Current JSON file name
- * @param {Date} props.startDate - Start date for the Burn Down Chart
- * @param {Date} props.endDate - End date for the Burn Down Chart
+ * Dashboard - Apple Design System
+ * Estadísticas y métricas del proyecto con diseño limpio y minimalista
  */
 const Dashboard = ({ stories, columns, currentJsonFile, startDate, endDate }) => {
-  console.log('Dashboard recibe startDate:', startDate, 'endDate:', endDate);
-
   // Calcular estadísticas
   const totalStories = stories.length;
   const completedStories = stories.filter(story => story.completedAt).length;
   const pendingStories = totalStories - completedStories;
-  
-  // Calcular porcentaje de progreso
-  const progressPercentage = totalStories > 0 
-    ? Math.round((completedStories / totalStories) * 100) 
+  const progressPercentage = totalStories > 0
+    ? Math.round((completedStories / totalStories) * 100)
     : 0;
-  
-  // Calcular criterios completados
-  const totalCriteria = stories.reduce((acc, story) => acc + story.criteria.length, 0);
-  const completedCriteria = stories.reduce((acc, story) => 
-    acc + story.criteria.filter(criterion => criterion.checked).length, 0);
-  
-  // Calcular tiempo promedio de finalización (en días)
-  const completedStoriesWithDuration = stories.filter(story => 
+
+  // Criterios
+  const totalCriteria = stories.reduce((acc, story) => acc + (story.criteria?.length || 0), 0);
+  const completedCriteria = stories.reduce((acc, story) =>
+    acc + (story.criteria?.filter(c => c.checked).length || 0), 0);
+  const criteriaPercentage = totalCriteria > 0
+    ? Math.round((completedCriteria / totalCriteria) * 100)
+    : 0;
+
+  // Tiempo promedio de finalización
+  const completedStoriesWithDuration = stories.filter(story =>
     story.completedAt && story.createdAt);
-  
-  const avgCompletionTime = completedStoriesWithDuration.length > 0 
-    ? Math.round(completedStoriesWithDuration.reduce((acc, story) => 
-        acc + (new Date(story.completedAt) - new Date(story.createdAt)) / (1000 * 60 * 60 * 24), 0) 
-        / completedStoriesWithDuration.length)
+  const avgCompletionTime = completedStoriesWithDuration.length > 0
+    ? Math.round(completedStoriesWithDuration.reduce((acc, story) =>
+      acc + (new Date(story.completedAt) - new Date(story.createdAt)) / (1000 * 60 * 60 * 24), 0)
+      / completedStoriesWithDuration.length)
     : 0;
-    
-  // Calcular métricas por usuario
+
+  // Métricas por usuario
   const userMetrics = useMemo(() => {
     const userMap = new Map();
-    
     stories.forEach(story => {
       const user = story.user || 'Sin asignar';
       if (!userMap.has(user)) {
@@ -145,798 +45,390 @@ const Dashboard = ({ stories, columns, currentJsonFile, startDate, endDate }) =>
           name: user,
           totalStories: 0,
           completedStories: 0,
-          pendingStories: 0,
           totalCriteria: 0,
-          completedCriteria: 0,
-          totalPoints: 0,
-          completedPoints: 0
+          completedCriteria: 0
         });
       }
-      
       const userData = userMap.get(user);
       userData.totalStories++;
-      
-      // Calcular puntos de la historia (usar story.points o 1 por defecto)
-      const storyPoints = story.points || 1;
-      userData.totalPoints += storyPoints;
-      
-      if (story.completedAt) {
-        userData.completedStories++;
-        userData.completedPoints += storyPoints;
-      } else {
-        userData.pendingStories++;
-      }
-      
-      // Contar criterios
-      story.criteria.forEach(criterion => {
+      if (story.completedAt) userData.completedStories++;
+      (story.criteria || []).forEach(c => {
         userData.totalCriteria++;
-        if (criterion.checked) {
-          userData.completedCriteria++;
-        }
+        if (c.checked) userData.completedCriteria++;
       });
     });
-    
-    // Calcular porcentajes
     return Array.from(userMap.values())
       .map(user => ({
         ...user,
-        completionRate: user.totalStories > 0 
-          ? Math.round((user.completedStories / user.totalStories) * 100) 
+        completionRate: user.totalStories > 0
+          ? Math.round((user.completedStories / user.totalStories) * 100)
           : 0,
-        criteriaCompletionRate: user.totalCriteria > 0
+        criteriaRate: user.totalCriteria > 0
           ? Math.round((user.completedCriteria / user.totalCriteria) * 100)
-          : 0,
-        pointsCompletionRate: user.totalPoints > 0
-          ? Math.round((user.completedPoints / user.totalPoints) * 100)
           : 0
-      }));
+      }))
+      .sort((a, b) => b.completionRate - a.completionRate);
   }, [stories]);
-  
-  // Ordenar las métricas de usuarios por puntos completados (de mayor a menor)
-  const sortedUserMetrics = useMemo(() => {
-    return [...userMetrics].sort((a, b) => b.pointsCompletionRate - a.pointsCompletionRate);
-  }, [userMetrics]);
-  
-  // Colores para las barras
-  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEEAD'];
-  
-  // Calcular métricas por proyecto (agrupando por el identificador de cliente)
+
+  // Métricas por proyecto
   const projectMetrics = useMemo(() => {
-    console.log('=== DEBUG: Iniciando cálculo de métricas por proyecto ===');
-    console.log('Total de historias recibidas:', stories.length);
-    
-    // Verificar la estructura de las historias
-    if (stories.length > 0) {
-      console.log('=== DEBUG: Estructura de las historias ===');
-      console.log('Campos de la primera historia:', Object.keys(stories[0]));
-      console.log('Primeras 5 historias:', stories.slice(0, 5).map(s => ({
-        id: s.id,
-        id_historia: s.id_historia,
-        title: s.title,
-        user: s.user,
-        completada: !!s.completedAt,
-        criterios: s.criteria ? s.criteria.length : 0,
-        jsonFileName: s.jsonFileName
-      })));
-      
-      // Buscar historias con id_historia
-      const historiasConId = stories.filter(s => s.id_historia);
-      console.log(`Historias con id_historia: ${historiasConId.length}/${stories.length}`);
-      
-      if (historiasConId.length > 0) {
-        console.log('Ejemplos de id_historia:', historiasConId.slice(0, 3).map(s => s.id_historia));
-      } else {
-        console.log('Ninguna historia tiene id_historia definido, usando jsonFileName como agrupador');
-      }
-    }
-    
     const projectMap = new Map();
-    
     stories.forEach(story => {
-      // Intentar extraer el identificador de cliente del ID de historia (formato: HU-NNN-XXX)
       let clientId = 'Sin proyecto';
-      
-      // 1. Intentar extraer de id_historia si existe
       if (story.id_historia) {
-        // Formato: HU-XX...-XXX donde XX... son 2-5 caracteres alfanuméricos del código del cliente
         const match = story.id_historia.match(/^HU-([A-Za-z0-9]{2,5})-/i);
-        if (match && match[1]) {
-          clientId = match[1]; // Usar directamente el código del cliente (ej: 'CHIL')
-        }
-      } 
-      // 2. Si no hay id_historia, usar el jsonFileName
-      else if (story.jsonFileName) {
+        if (match && match[1]) clientId = match[1];
+      } else if (story.jsonFileName) {
         clientId = story.jsonFileName.replace('.json', '');
-      } 
-      // 3. Si no hay ninguno, agrupar como 'Sin proyecto'
-      else {
-        clientId = 'Sin proyecto';
       }
-      
       if (!projectMap.has(clientId)) {
         projectMap.set(clientId, {
           name: clientId,
           totalStories: 0,
           completedStories: 0,
-          pendingStories: 0,
           totalCriteria: 0,
-          completedCriteria: 0,
-          totalPoints: 0,
-          completedPoints: 0,
-          stories: [] // Almacenar IDs de historias para referencia
+          completedCriteria: 0
         });
       }
-      
-      const projectData = projectMap.get(clientId);
-      projectData.totalStories++;
-      
-      // Agregar ID de la historia a la lista (si no existe)
-      if (story.id_historia && !projectData.stories.includes(story.id_historia)) {
-        projectData.stories.push(story.id_historia);
-      }
-      
-      // Calcular puntos de la historia (usando story.points o 1 por defecto)
-      const storyPoints = typeof story.points === 'number' ? story.points : 1;
-      projectData.totalPoints += storyPoints;
-      
-      if (story.completedAt) {
-        projectData.completedStories++;
-        projectData.completedPoints += storyPoints;
-      } else {
-        projectData.pendingStories++;
-      }
-      
-      // Contar criterios
-      if (Array.isArray(story.criteria)) {
-        story.criteria.forEach(criterion => {
-          projectData.totalCriteria++;
-          if (criterion.checked) {
-            projectData.completedCriteria++;
-          }
-        });
-      }
+      const data = projectMap.get(clientId);
+      data.totalStories++;
+      if (story.completedAt) data.completedStories++;
+      (story.criteria || []).forEach(c => {
+        data.totalCriteria++;
+        if (c.checked) data.completedCriteria++;
+      });
     });
-    
-    // Calcular porcentajes y agregar información adicional
-    return Array.from(projectMap.entries())
-      .map(([name, data]) => ({
-        ...data,
-        name,
-        completionRate: data.totalStories > 0 
-          ? Math.round((data.completedStories / data.totalStories) * 100) 
-          : 0,
-        criteriaCompletionRate: data.totalCriteria > 0
-          ? Math.round((data.completedCriteria / data.totalCriteria) * 100)
-          : 0,
-        pointsCompletionRate: data.totalPoints > 0
-          ? Math.round((data.completedPoints / data.totalPoints) * 100)
-          : 0,
-        storyCount: data.totalStories,
-        completedStoryCount: data.completedStories,
-        storyIds: data.stories.join(', ')
+    return Array.from(projectMap.values())
+      .map(p => ({
+        ...p,
+        completionRate: p.totalStories > 0 ? Math.round((p.completedStories / p.totalStories) * 100) : 0,
+        criteriaRate: p.totalCriteria > 0 ? Math.round((p.completedCriteria / p.totalCriteria) * 100) : 0
       }))
-      .sort((a, b) => b.completedPoints - a.completedPoints); // Ordenar por puntos completados
+      .sort((a, b) => b.completionRate - a.completionRate);
   }, [stories]);
 
-  // Preparar datos para los gráficos de Burn Down Chart por columna
-  const burnDownDataByColumn = useMemo(() => {
-    console.log('Generando Burn Down Charts con:', { startDate, endDate, columns, stories });
-    
-    // Validar que las fechas sean válidas
-    if (!startDate || !endDate || !startDate.getTime || !endDate.getTime) {
-      console.log('Fechas no válidas:', { startDate, endDate });
-      return {};
-    }
-    
-    // Filtrar solo las columnas de trabajo (excluir la primera columna "To Do")
-    const workColumns = columns.slice(1);
-    
-    // Generar un array de fechas entre startDate y endDate
-    const dateArray = [];
-    const currentDate = new Date(startDate);
-    const lastDate = new Date(endDate);
-    
-    // Fecha actual para limitar los datos reales
-    const today = new Date();
-    today.setHours(0, 0, 0, 0); // Normalizar a inicio del día
-    
-    // Asegurarse de que las fechas son válidas
-    if (isNaN(currentDate.getTime()) || isNaN(lastDate.getTime())) {
-      return {};
-    }
-    
-    // Generar todas las fechas entre startDate y endDate
-    while (currentDate <= lastDate) {
-      // Formatear la fecha como DD/MM/YYYY para asegurar consistencia
-      const day = currentDate.getDate().toString().padStart(2, '0');
-      const month = (currentDate.getMonth() + 1).toString().padStart(2, '0');
-      const year = currentDate.getFullYear();
-      dateArray.push({
-        dateStr: `${day}/${month}/${year}`,
-        date: new Date(currentDate.getTime()) // Copia exacta
-      });
-      // Avanzar al siguiente día
-      currentDate.setDate(currentDate.getDate() + 1);
-    }
-    
-    // Si no hay fechas, devolver objeto vacío
-    if (dateArray.length === 0) return {};
-    
-    // Crear un objeto con datos para cada columna
-    const chartDataByColumn = {};
-    
-    // Para cada columna, crear un conjunto de datos
-    workColumns.forEach(column => {
-      // Normalizar ambos valores a string para comparar correctamente
-      // Comparar directamente story.column._id con column._id (ambos string)
-      const columnStories = stories.filter(story => {
-        const match = story.column && story.column._id === column._id;
-        if (match) {
-          console.log(`MATCH: story.column._id = ${story.column._id}, column._id = ${column._id}`);
-        }
-        return match;
-      });
-      console.log(`Filtrando historias para columna ${column.name}`, columnStories);
-      
-      // Calcular el total de criterios de aceptación para esta columna (por hacer + concluidos)
-      let actualTotalCriteriaCount = 0;
-      console.log('Historias en columna', column.name, columnStories);
-      // Mostrar detalles de cada historia y sus criterios
-      console.log(`Analizando criterios para ${columnStories.length} historias en la columna ${column.name}:`);
-      
-      // Verificar si hay historias en esta columna
-      if (columnStories.length === 0) {
-        console.log(`No hay historias en la columna ${column.name}`);
-      } else {
-        // Contar criterios para cada historia
-        columnStories.forEach(story => {
-          // Verificar que story.criteria sea un array válido
-          if (!story.criteria || !Array.isArray(story.criteria)) {
-            console.warn(`Historia "${story.title}" (ID: ${story._id}): No tiene criterios válidos`, story);
-            return;
-          }
-          
-          const criteriaCount = Array.isArray(story.criteria) ? story.criteria.length : 0;
-          console.log(`Historia "${story.title}" (ID: ${story._id}): tiene ${criteriaCount} criterios`, story.criteria);
+  // Colores Apple-inspired para gráficos
+  const COLORS = ['#0a84ff', '#30d158', '#ff9f0a', '#ff453a', '#bf5af2', '#64d2ff', '#ff375f', '#ffd60a', '#ac8e68', '#5e5ce6'];
 
-          
-          // Verificar cada criterio individualmente
-          if (criteriaCount > 0) {
-            story.criteria.forEach((criterion, index) => {
-              console.log(`  Criterio ${index + 1}: ${criterion.texto} (${criterion.checked ? 'Completado' : 'Pendiente'})`);
-            });
-          }
-          
-          actualTotalCriteriaCount += criteriaCount; // Sum into actualTotalCriteriaCount
-        });
-      }
-      
-      console.log(`Columna ${column.name} (ID: ${column._id}): ${columnStories.length} historias, ${actualTotalCriteriaCount} criterios totales`);
-      
-      // Si no hay criterios, usar un valor por defecto para mostrar el gráfico
-      if (actualTotalCriteriaCount === 0) {
-        console.warn(`ADVERTENCIA: El total de criterios de la columna '${column.name}' es 0. ¿Debería ser mayor?`);
-        console.log(`Columna ${column.name}: No hay criterios, usando valor por defecto SOLO para ejemplo`);
-        const exampleDisplayTotal = 10; // Solo para columnas vacías
-        // Línea ideal solo dos puntos
-        const exampleChartData = [];
-        if (dateArray.length >= 2) {
-          exampleChartData.push({
-            date: dateArray[0].dateStr,
-            Ideal: exampleDisplayTotal,
-            Total: exampleDisplayTotal
-          });
-          for (let i = 1; i < dateArray.length - 1; i++) {
-            exampleChartData.push({ date: dateArray[i].dateStr, Total: exampleDisplayTotal });
-          }
-          exampleChartData.push({
-            date: dateArray[dateArray.length - 1].dateStr,
-            Ideal: 0,
-            Total: exampleDisplayTotal
-          });
-        }
-        // Eje Y solo para ejemplo
-        const yAxisValuesExample = [0, 2, 4, 6, 8, 10];
-        chartDataByColumn[column._id] = {
-          columnName: column.name,
-          chartData: exampleChartData,
-          totalCriteria: exampleDisplayTotal,
-          yAxisValues: yAxisValuesExample,
-          isExample: true
-        };
-        return;
-      }
-      
-      // --- If we are here, actualTotalCriteriaCount > 0 ---
-      let effectiveTotalCriteria = actualTotalCriteriaCount; // Start with the actual count
+  // Tooltip personalizado
+  const CustomTooltip = ({ active, payload, label }) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-white/95 backdrop-blur-sm border border-neutral-200 shadow-apple-lg rounded-apple px-3 py-2">
+          <p className="text-xs font-medium text-neutral-900 mb-1">{label}</p>
+          {payload.map((entry, idx) => (
+            <p key={idx} className="text-xs" style={{ color: entry.color }}>
+              {entry.value}%
+            </p>
+          ))}
+        </div>
+      );
+    }
+    return null;
+  };
 
-      // Forzar un valor mínimo para evitar problemas con el eje Y si es muy bajo (e.g. 1)
-      if (effectiveTotalCriteria < 2) {
-        console.log(`Columna ${column.name}: Ajustando effectiveTotalCriteria de ${effectiveTotalCriteria} a 2 para evitar problemas con el eje Y`);
-        effectiveTotalCriteria = 2;
-      }
-      
-      // Registrar el valor real de criterios para depuración
-      console.log(`Columna ${column.name}: Usando valor efectivo de ${effectiveTotalCriteria} criterios (actual: ${actualTotalCriteriaCount})`);
-      
-      // Crear datos para el gráfico de esta columna
-      // Línea ideal: solo dos puntos, el resto undefined
-      const chartData = dateArray.map((dateObj, index) => {
-        const { dateStr, date } = dateObj;
-        const dataPoint = { date: dateStr, Total: effectiveTotalCriteria };
-        // Línea ideal: solo primer y último punto
-        if (index === 0) {
-          dataPoint['Ideal'] = effectiveTotalCriteria;
-        } else if (index === dateArray.length - 1) {
-          dataPoint['Ideal'] = 0;
-        } else {
-          dataPoint['Ideal'] = null; // Para que Recharts dibuje solo la recta
-        }
-        // Línea real: criterios pendientes en la fecha actual (solo hasta hoy)
-        if (date <= today) {
-          // Restar criterios completados hasta esa fecha
-          const pendingCriteria = columnStories.reduce((acc, story) => {
-            const pendingInStory = story.criteria.filter(criterion => {
-              // Si el criterio está completado Y su completedAt es <= la fecha, se descuenta
-              if (criterion.checked && criterion.completedAt) {
-                return new Date(criterion.completedAt) > date;
-              }
-              return !criterion.checked;
-            }).length;
-            return acc + pendingInStory;
-          }, 0);
-          dataPoint['Real'] = pendingCriteria;
-        }
-        return dataPoint;
-      });
-      
-      // Calcular los valores exactos para el eje Y basados en el número real de criterios
-      const yAxisValues = [];
-      yAxisValues.push(0); // Siempre incluir 0
-      
-      if (effectiveTotalCriteria <= 5) {
-        // Para 5 o menos criterios, mostrar cada valor entero
-        for (let i = 1; i <= effectiveTotalCriteria; i++) {
-          yAxisValues.push(i);
-        }
-      } else if (effectiveTotalCriteria <= 10) {
-        // Para 6-10 criterios, mostrar valores distribuidos (aprox. 5 ticks)
-        const step = effectiveTotalCriteria / 5;
-        for (let i = 1; i <= 5; i++) {
-          yAxisValues.push(Math.round(i * step));
-        }
-      } else {
-        // Para más de 10 criterios, mostrar 5 marcas distribuidas (0%, 25%, 50%, 75%, 100%)
-        yAxisValues.push(Math.round(0.25 * effectiveTotalCriteria));
-        yAxisValues.push(Math.round(0.50 * effectiveTotalCriteria));
-        yAxisValues.push(Math.round(0.75 * effectiveTotalCriteria));
-        yAxisValues.push(effectiveTotalCriteria);
-      }
-      
-      // Asegurar que los valores sean únicos, estén ordenados y el máximo esté presente
-      let uniqueSortedYAxisValues = [...new Set(yAxisValues)].sort((a, b) => a - b);
-      if (effectiveTotalCriteria > 0 && !uniqueSortedYAxisValues.includes(effectiveTotalCriteria)) {
-        uniqueSortedYAxisValues.push(effectiveTotalCriteria);
-        uniqueSortedYAxisValues = uniqueSortedYAxisValues.sort((a, b) => a - b);
-      }
-      
-      chartDataByColumn[column._id] = {
-        columnName: column.name,
-        chartData: chartData,
-        totalCriteria: effectiveTotalCriteria, // Guardar el total efectivo para el dominio del eje Y
-        yAxisValues: uniqueSortedYAxisValues, // Guardar los ticks calculados
-        isExample: false
-      };
-    });
-    
-    console.log('Datos generados para los Burn Down Charts:', chartDataByColumn);
-    console.log('Número de columnas con gráficos:', Object.keys(chartDataByColumn).length);
-    
-    console.log('chartDataByColumn FINAL:', chartDataByColumn);
-    return chartDataByColumn;
-  }, [stories, columns, startDate, endDate]);
-  
+  // Export helpers
+  const exportProjectsToExcel = () => {
+    const data = projectMetrics.map(p => ({
+      'Proyecto': p.name,
+      'Historias Completadas': p.completedStories,
+      'Historias Totales': p.totalStories,
+      '% Completado': `${p.completionRate}%`,
+      'Criterios Completados': p.completedCriteria,
+      'Criterios Totales': p.totalCriteria,
+      '% Criterios': `${p.criteriaRate}%`
+    }));
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Proyectos');
+    const timestamp = new Date().toISOString().slice(0, 10);
+    XLSX.writeFile(wb, `proyectos_${timestamp}.xlsx`);
+  };
+
+  const exportUsersToExcel = () => {
+    const data = userMetrics.map(u => ({
+      'Asignado': u.name,
+      'Historias Completadas': u.completedStories,
+      'Historias Totales': u.totalStories,
+      '% Completado': `${u.completionRate}%`,
+      'Criterios Completados': u.completedCriteria,
+      'Criterios Totales': u.totalCriteria,
+      '% Criterios': `${u.criteriaRate}%`
+    }));
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Asignados');
+    const timestamp = new Date().toISOString().slice(0, 10);
+    XLSX.writeFile(wb, `asignados_${timestamp}.xlsx`);
+  };
+
   return (
-    <div className="dashboard">
-      <h2 className="text-xl font-semibold text-slate-700 mb-4">
-        Dashboard
-        {currentJsonFile && (
-          <span className="ml-2 text-sm font-normal text-blue-600">
-            (Proyecto: {currentJsonFile})
-          </span>
-        )}
-      </h2>
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        {/* Tarjeta de progreso general */}
-        <div className="bg-white p-4 rounded-lg shadow-sm">
-          <h3 className="text-sm font-medium text-slate-500 mb-1">Progreso General</h3>
-          <div className="text-2xl font-bold text-slate-700">{progressPercentage}%</div>
-          <div className="w-full bg-slate-200 rounded-full h-2.5 mt-2">
-            <div 
-              className="bg-blue-600 h-2.5 rounded-full" 
-              style={{ width: `${progressPercentage}%` }}
-            ></div>
-          </div>
-        </div>
-        
-        {/* Tarjeta de historias */}
-        <div className="bg-white p-4 rounded-lg shadow-sm">
-          <h3 className="text-sm font-medium text-slate-500 mb-1">Historias</h3>
-          <div className="text-2xl font-bold text-slate-700">{completedStories} / {totalStories}</div>
-          <div className="text-xs text-slate-500 mt-1">
-            <span className="text-green-600">{completedStories} completadas</span> • 
-            <span className="text-amber-600 ml-1">{pendingStories} pendientes</span>
-          </div>
-        </div>
-        
-        {/* Tarjeta de criterios */}
-        <div className="bg-white p-4 rounded-lg shadow-sm">
-          <h3 className="text-sm font-medium text-slate-500 mb-1">Criterios de Aceptación</h3>
-          <div className="text-2xl font-bold text-slate-700">{completedCriteria} / {totalCriteria}</div>
-          <div className="text-xs text-slate-500 mt-1">
-            {totalCriteria > 0 ? Math.round((completedCriteria / totalCriteria) * 100) : 0}% completados
-          </div>
-        </div>
-        
-        {/* Tarjeta de tiempo promedio */}
-        <div className="bg-white p-4 rounded-lg shadow-sm">
-          <h3 className="text-sm font-medium text-slate-500 mb-1">Tiempo Promedio</h3>
-          <div className="text-2xl font-bold text-slate-700">{avgCompletionTime} días</div>
-          <div className="text-xs text-slate-500 mt-1">
-            por historia completada
-          </div>
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-xl font-semibold text-neutral-900">Dashboard</h2>
+          {currentJsonFile && (
+            <p className="text-sm text-neutral-500 mt-0.5">{currentJsonFile}</p>
+          )}
         </div>
       </div>
-      
-      {/* Métricas por Proyecto */}
-      <div className="bg-white p-4 rounded-lg shadow-sm mb-6">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-semibold text-slate-700">Progreso por Proyecto</h3>
+
+      {/* KPI Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Progress */}
+        <div className="card p-5">
+          <div className="flex items-center justify-between mb-3">
+            <div className="w-9 h-9 rounded-apple bg-primary-50 flex items-center justify-center">
+              <FiTrendingUp className="w-4.5 h-4.5 text-primary-500" />
+            </div>
+            <span className="text-2xl font-bold text-neutral-900">{progressPercentage}%</span>
+          </div>
+          <div className="h-1.5 bg-neutral-100 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-primary-500 rounded-full transition-all duration-500 ease-apple"
+              style={{ width: `${progressPercentage}%` }}
+            />
+          </div>
+          <p className="text-xs text-neutral-500 mt-2">Progreso general</p>
+        </div>
+
+        {/* Stories */}
+        <div className="card p-5">
+          <div className="flex items-center justify-between mb-3">
+            <div className="w-9 h-9 rounded-apple bg-success-50 flex items-center justify-center">
+              <FiCheckCircle className="w-4.5 h-4.5 text-success-500" />
+            </div>
+            <span className="text-2xl font-bold text-neutral-900">{completedStories}<span className="text-sm font-normal text-neutral-400">/{totalStories}</span></span>
+          </div>
+          <div className="flex items-center gap-3 text-xs">
+            <span className="text-success-600">{completedStories} completadas</span>
+            <span className="text-neutral-300">|</span>
+            <span className="text-warning-600">{pendingStories} pendientes</span>
+          </div>
+          <p className="text-xs text-neutral-500 mt-2">Historias de usuario</p>
+        </div>
+
+        {/* Criteria */}
+        <div className="card p-5">
+          <div className="flex items-center justify-between mb-3">
+            <div className="w-9 h-9 rounded-apple bg-purple-50 flex items-center justify-center">
+              <FiTarget className="w-4.5 h-4.5 text-purple-500" />
+            </div>
+            <span className="text-2xl font-bold text-neutral-900">{criteriaPercentage}%</span>
+          </div>
+          <div className="h-1.5 bg-neutral-100 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-purple-500 rounded-full transition-all duration-500 ease-apple"
+              style={{ width: `${criteriaPercentage}%` }}
+            />
+          </div>
+          <p className="text-xs text-neutral-500 mt-2">{completedCriteria}/{totalCriteria} criterios</p>
+        </div>
+
+        {/* Avg Time */}
+        <div className="card p-5">
+          <div className="flex items-center justify-between mb-3">
+            <div className="w-9 h-9 rounded-apple bg-warning-50 flex items-center justify-center">
+              <FiClock className="w-4.5 h-4.5 text-warning-500" />
+            </div>
+            <span className="text-2xl font-bold text-neutral-900">{avgCompletionTime}<span className="text-sm font-normal text-neutral-400"> días</span></span>
+          </div>
+          <p className="text-xs text-neutral-500 mt-2">Tiempo promedio por historia</p>
+        </div>
+      </div>
+
+      {/* Project Progress */}
+      <div className="card p-6">
+        <div className="flex items-center justify-between mb-5">
+          <div className="flex items-center gap-2">
+            <FiLayers className="w-5 h-5 text-neutral-400" />
+            <h3 className="text-base font-semibold text-neutral-900">Progreso por Proyecto</h3>
+          </div>
           <button
-            onClick={() => {
-              // Crear datos para exportar
-              const data = projectMetrics.map(project => ({
-                'Proyecto': project.name,
-                'Historias Completadas': project.completedStories,
-                'Historias Totales': project.totalStories,
-                '% Completado': `${project.completionRate}%`,
-                'Puntos Completados': project.completedPoints,
-                'Puntos Totales': project.totalPoints,
-                '% Puntos Completados': `${project.pointsCompletionRate}%`,
-                'Criterios Completados': project.completedCriteria,
-                'Criterios Totales': project.totalCriteria,
-                '% Criterios Completados': `${project.criteriaCompletionRate}%`
-              }));
-              
-              // Crear hoja de trabajo
-              const ws = XLSX.utils.json_to_sheet(data);
-              const wb = XLSX.utils.book_new();
-              XLSX.utils.book_append_sheet(wb, ws, 'Proyectos');
-              
-              // Generar timestamp para el nombre del archivo
-              const timestamp = new Date().toISOString().replace(/[:.]/g, '-').replace('T', '_').slice(0, 19);
-              // Exportar archivo
-              XLSX.writeFile(wb, `progreso_proyectos_${timestamp}.xlsx`);
-            }}
-            className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+            onClick={exportProjectsToExcel}
+            className="btn btn-secondary text-xs inline-flex items-center gap-1.5"
           >
-            <Download className="h-3 w-3 mr-1" />
-            Exportar a Excel
+            <FiDownload className="w-3.5 h-3.5" />
+            Excel
           </button>
         </div>
-        
+
         {projectMetrics.length > 0 ? (
-          <div className="space-y-6">
-            {/* Gráfico de barras */}
-            <div className="h-64">
+          <div className="space-y-5">
+            {/* Bar Chart */}
+            <div className="h-48">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart
                   data={projectMetrics}
                   layout="vertical"
-                  margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                  margin={{ top: 0, right: 20, left: 0, bottom: 0 }}
+                  barSize={20}
                 >
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis type="number" domain={[0, 100]} />
-                  <YAxis 
-                    dataKey="name" 
-                    type="category" 
-                    width={200}
-                    tick={{ fontSize: 12 }}
-                    interval={0}
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" horizontal={false} />
+                  <XAxis type="number" domain={[0, 100]} tick={{ fontSize: 11, fill: '#8e8e93' }} axisLine={false} tickLine={false} />
+                  <YAxis
+                    dataKey="name"
+                    type="category"
+                    width={100}
+                    tick={{ fontSize: 11, fill: '#3a3a3c' }}
+                    axisLine={false}
+                    tickLine={false}
                   />
-                  <Tooltip 
-                    formatter={(value, name) => {
-                      if (name === 'completionRate') return [`${value}%`, 'Historias Completadas'];
-                      if (name === 'criteriaCompletionRate') return [`${value}%`, 'Criterios Completados'];
-                      if (name === 'pointsCompletionRate') return [`${value}%`, 'Puntos Completados'];
-                      return [value, name];
-                    }}
-                    labelFormatter={(name) => `Proyecto: ${name}`}
-                  />
-                  <Legend />
-                  <Bar dataKey="pointsCompletionRate" name="Puntos Completados" fill="#8884d8">
-                    {projectMetrics.map((entry, index) => (
+                  <Tooltip content={<CustomTooltip />} />
+                  <Bar dataKey="completionRate" radius={[0, 6, 6, 0]}>
+                    {projectMetrics.map((_, index) => (
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
             </div>
-            
-            {/* Tabla detallada */}
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-slate-200">
-                <thead className="bg-slate-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Proyecto</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Historias</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Criterios</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-slate-200">
-                  {projectMetrics.map((project, index) => (
-                    <tr key={project.name}>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <div className="flex-shrink-0 h-3 w-3 rounded-full" style={{ backgroundColor: COLORS[index % COLORS.length] }}></div>
-                          <div className="ml-4">
-                            <div className="text-sm font-medium text-slate-900">
-                              {project.name}
-                            </div>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-slate-900">
-                          {project.completedStories} de {project.totalStories}
-                        </div>
-                        <div className="w-full bg-slate-200 rounded-full h-2.5 mt-1">
-                          <div 
-                            className="bg-blue-600 h-2.5 rounded-full" 
-                            style={{ width: `${project.completionRate}%` }}
-                          ></div>
-                        </div>
-                        <div className="text-xs text-slate-500 mt-1">{project.completionRate}% completado</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-slate-900">
-                          {project.completedCriteria} de {project.totalCriteria}
-                        </div>
-                        <div className="w-full bg-slate-200 rounded-full h-2.5 mt-1">
-                          <div 
-                            className="bg-purple-500 h-2.5 rounded-full"
-                            style={{ width: `${project.criteriaCompletionRate}%` }}
-                          ></div>
-                        </div>
-                        <div className="text-xs text-slate-500 mt-1">{project.criteriaCompletionRate}% completado</div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+
+            {/* Project cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              {projectMetrics.map((project, index) => (
+                <div key={project.name} className="p-4 bg-neutral-50 rounded-apple-lg border border-neutral-100">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: COLORS[index % COLORS.length] }} />
+                    <span className="text-sm font-semibold text-neutral-900">{project.name}</span>
+                  </div>
+                  <div className="space-y-2">
+                    <div>
+                      <div className="flex justify-between text-xs text-neutral-500 mb-1">
+                        <span>Historias</span>
+                        <span className="font-medium text-neutral-700">{project.completedStories}/{project.totalStories}</span>
+                      </div>
+                      <div className="h-1.5 bg-neutral-200 rounded-full overflow-hidden">
+                        <div className="h-full rounded-full transition-all duration-300" style={{ width: `${project.completionRate}%`, backgroundColor: COLORS[index % COLORS.length] }} />
+                      </div>
+                    </div>
+                    <div>
+                      <div className="flex justify-between text-xs text-neutral-500 mb-1">
+                        <span>Criterios</span>
+                        <span className="font-medium text-neutral-700">{project.completedCriteria}/{project.totalCriteria}</span>
+                      </div>
+                      <div className="h-1.5 bg-neutral-200 rounded-full overflow-hidden">
+                        <div className="h-full bg-purple-400 rounded-full transition-all duration-300" style={{ width: `${project.criteriaRate}%` }} />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         ) : (
-          <p className="text-sm text-slate-500">No hay datos de proyectos disponibles.</p>
+          <p className="text-sm text-neutral-400 text-center py-8">No hay datos de proyectos disponibles.</p>
         )}
       </div>
 
-
-      {/* Métricas por Usuario */}
-      <div className="bg-white p-4 rounded-lg shadow-sm mb-6">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-semibold text-slate-700 flex items-center">
-            <User className="mr-2" />
-            Progreso por Asignado
-          </h3>
+      {/* User Progress */}
+      <div className="card p-6">
+        <div className="flex items-center justify-between mb-5">
+          <div className="flex items-center gap-2">
+            <FiUser className="w-5 h-5 text-neutral-400" />
+            <h3 className="text-base font-semibold text-neutral-900">Progreso por Asignado</h3>
+          </div>
           <button
-            onClick={() => {
-              // Crear datos para exportar
-              const data = sortedUserMetrics.map(user => ({
-                'Usuario': user.name,
-                'Historias Completadas': user.completedStories,
-                'Historias Totales': user.totalStories,
-                '% Historias Completadas': `${user.completionRate}%`,
-                'Criterios Completados': user.completedCriteria,
-                'Criterios Totales': user.totalCriteria,
-                '% Criterios Completados': `${user.criteriaCompletionRate}%`
-              }));
-              
-              // Crear hoja de trabajo
-              const ws = XLSX.utils.json_to_sheet(data);
-              const wb = XLSX.utils.book_new();
-              XLSX.utils.book_append_sheet(wb, ws, 'Usuarios');
-              
-              // Generar timestamp para el nombre del archivo
-              const timestamp = new Date().toISOString().replace(/[:.]/g, '-').replace('T', '_').slice(0, 19);
-              // Exportar archivo
-              XLSX.writeFile(wb, `progreso_usuarios_${timestamp}.xlsx`);
-            }}
-            className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            onClick={exportUsersToExcel}
+            className="btn btn-secondary text-xs inline-flex items-center gap-1.5"
           >
-            <Download className="h-3 w-3 mr-1" />
-            Exportar a Excel
+            <FiDownload className="w-3.5 h-3.5" />
+            Excel
           </button>
         </div>
-        
+
         {userMetrics.length > 0 ? (
-          <div className="space-y-6">
-            {/* Gráfico de barras */}
-            <div className="h-64">
+          <div className="space-y-5">
+            {/* Bar Chart */}
+            <div className="h-48">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart
-                  data={sortedUserMetrics}
+                  data={userMetrics}
                   layout="vertical"
-                  margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                  margin={{ top: 0, right: 20, left: 0, bottom: 0 }}
+                  barSize={20}
                 >
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis type="number" domain={[0, 100]} />
-                  <YAxis 
-                    dataKey="name" 
-                    type="category" 
-                    width={120}
-                    tick={{ fontSize: 12 }}
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" horizontal={false} />
+                  <XAxis type="number" domain={[0, 100]} tick={{ fontSize: 11, fill: '#8e8e93' }} axisLine={false} tickLine={false} />
+                  <YAxis
+                    dataKey="name"
+                    type="category"
+                    width={100}
+                    tick={{ fontSize: 11, fill: '#3a3a3c' }}
+                    axisLine={false}
+                    tickLine={false}
                   />
-                  <Tooltip 
-                    formatter={(value, name, props) => {
-                      const user = props.payload;
-                      return [
-                        `${value}%`,
-                        name === 'completionRate' 
-                          ? `Historias Completadas (${user.completedStories}/${user.totalStories})` 
-                          : 'Progreso'
-                      ];
-                    }}
-                    labelFormatter={(name) => `Asignado: ${name}`}
-                  />
-                  <Legend />
-                  <Bar 
-                    dataKey="completionRate" 
-                    name="Historias Completadas" 
-                    fill="#4f46e5"
-                    radius={[0, 4, 4, 0]}
-                  >
-                    {sortedUserMetrics.map((entry, index) => (
-                      <Cell 
-                        key={`cell-${index}`} 
-                        fill={COLORS[index % COLORS.length]} 
-                      />
+                  <Tooltip content={<CustomTooltip />} />
+                  <Bar dataKey="completionRate" radius={[0, 6, 6, 0]}>
+                    {userMetrics.map((_, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
             </div>
-            
-            {/* Tabla detallada */}
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-slate-200">
-                <thead className="bg-slate-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Asignado</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Historias</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Criterios</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-slate-200">
-                  {sortedUserMetrics.map((user, index) => (
-                    <tr key={user.name}>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">
-                        {user.name}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
-                        <div className="flex items-center">
-                          <CheckCircle className="h-4 w-4 text-green-500 mr-1" />
-                          {user.completedStories} de {user.totalStories} completadas
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="w-full bg-slate-200 rounded-full h-2.5">
-                          <div 
-                            className="h-2.5 rounded-full bg-blue-600" 
-                            style={{ width: `${user.pointsCompletionRate}%` }}
-                          />
-                        </div>
-                        <div className="text-xs text-slate-500 mt-1">
-                          {user.completedPoints} de {user.totalPoints} puntos ({user.pointsCompletionRate}%)
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
-                        {user.completedCriteria} de {user.totalCriteria} criterios
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+
+            {/* User cards */}
+            <div className="space-y-2">
+              {userMetrics.map((user, index) => (
+                <div key={user.name} className="flex items-center gap-4 p-3 bg-neutral-50 rounded-apple-lg border border-neutral-100">
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold" style={{ backgroundColor: COLORS[index % COLORS.length] }}>
+                    {user.name.charAt(0).toUpperCase()}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-sm font-medium text-neutral-900 truncate">{user.name}</span>
+                      <span className="text-xs font-semibold text-neutral-700 ml-2">{user.completionRate}%</span>
+                    </div>
+                    <div className="h-1.5 bg-neutral-200 rounded-full overflow-hidden">
+                      <div className="h-full rounded-full transition-all duration-300" style={{ width: `${user.completionRate}%`, backgroundColor: COLORS[index % COLORS.length] }} />
+                    </div>
+                    <div className="flex gap-4 mt-1.5 text-[11px] text-neutral-500">
+                      <span>{user.completedStories}/{user.totalStories} historias</span>
+                      <span>{user.completedCriteria}/{user.totalCriteria} criterios</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         ) : (
-          <p className="text-sm text-slate-500">No hay datos de usuarios disponibles.</p>
+          <p className="text-sm text-neutral-400 text-center py-8">No hay datos de asignados disponibles.</p>
         )}
       </div>
-      
-      {/* Burn Down Charts por columna */}
-      <h3 className="text-lg font-semibold text-slate-700 mb-3">Burn Down Charts por Columna</h3>
-      {console.log('Renderizando Burn Down Charts, datos disponibles:', Object.keys(burnDownDataByColumn).length)}
-      
-      {Object.keys(burnDownDataByColumn).length > 0 ? (
-        Object.entries(burnDownDataByColumn).map(([columnId, data]) => (
-          <div key={columnId} className="bg-white p-4 rounded-lg shadow-sm mb-6">
-            <h3 className="text-sm font-medium text-slate-700 mb-1">{data.columnName}</h3>
-            <p className="text-xs text-slate-500 mb-3">
-              Total de criterios de aceptación: <span className="font-semibold">{data.totalCriteria}</span>
-            </p>
-            {data.chartData.length > 0 ? (
-              <div className="h-80">
-                <div className="text-center mb-2">
-                  <span className="font-bold text-sm text-blue-600">Escala máxima: {data.totalCriteria} criterios</span>
-                </div>
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart
-                    data={data.chartData}
-                    margin={{
-                      top: 10,
-                      right: 30,
-                      left: 20,
-                      bottom: 5,
-                    }}
-                  >
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="date" />
-                    <YAxis
-                      type="number"
-                      domain={[0, data.totalCriteria]}
-                      ticks={data.yAxisValues}
-                    />
-                    <Tooltip />
-                    <Line type="linear" dataKey="Ideal" stroke="#8884d8" strokeWidth={2} dot={false} />
-                    <Line type="linear" dataKey="Total" stroke="#82ca9d" strokeWidth={2} dot={false} />
-                    <Line type="linear" dataKey="Real" stroke="#82ca9d" strokeWidth={2} dot={false} activeDot={{ r: 6 }} connectNulls={true} />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-            ) : (
-              <p className="text-sm text-slate-500">No hay suficientes datos para mostrar el gráfico.</p>
-            )}
-          </div>
-        ))
-      ) : (
-        <div className="bg-white p-4 rounded-lg shadow-sm mb-6">
-          <p className="text-sm text-slate-500">No hay suficientes datos para mostrar los gráficos de Burn Down.</p>
-        </div>
-      )}
 
-      {/* Historias completadas recientemente */}
-      <div className="bg-white p-4 rounded-lg shadow-sm mb-6">
-        <h3 className="text-sm font-medium text-slate-700 mb-3">Historias Completadas Recientemente</h3>
+      {/* Recently Completed Stories */}
+      <div className="card p-6">
+        <div className="flex items-center gap-2 mb-4">
+          <FiCheckCircle className="w-5 h-5 text-success-500" />
+          <h3 className="text-base font-semibold text-neutral-900">Completadas Recientemente</h3>
+        </div>
+
         {completedStoriesWithDuration.length > 0 ? (
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-slate-200">
-              <thead>
-                <tr>
-                  <th className="px-3 py-2 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Historia</th>
-                  <th className="px-3 py-2 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Fecha de Finalización</th>
-                  <th className="px-3 py-2 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Duración</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-200">
-                {completedStoriesWithDuration
-                  .sort((a, b) => new Date(b.completedAt) - new Date(a.completedAt))
-                  .slice(0, 5)
-                  .map(story => (
-                    <tr key={story._id}>
-                      <td className="px-3 py-2 text-sm text-slate-700">{story.title}</td>
-                      <td className="px-3 py-2 text-sm text-slate-500">{new Date(story.completedAt).toLocaleDateString()}</td>
-                      <td className="px-3 py-2 text-sm text-slate-500">
-                        {Math.ceil((new Date(story.completedAt) - new Date(story.createdAt)) / (1000 * 60 * 60 * 24))} días
-                      </td>
-                    </tr>
-                  ))}
-              </tbody>
-            </table>
+          <div className="space-y-2">
+            {completedStoriesWithDuration
+              .sort((a, b) => new Date(b.completedAt) - new Date(a.completedAt))
+              .slice(0, 5)
+              .map(story => (
+                <div key={story._id} className="flex items-center justify-between p-3 bg-neutral-50 rounded-apple-lg border border-neutral-100">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-neutral-900 truncate">{story.title}</p>
+                    <p className="text-[11px] text-neutral-400 mt-0.5">
+                      {new Date(story.completedAt).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' })}
+                    </p>
+                  </div>
+                  <span className="badge-success text-[11px] ml-3 flex-shrink-0">
+                    {Math.ceil((new Date(story.completedAt) - new Date(story.createdAt)) / (1000 * 60 * 60 * 24))} días
+                  </span>
+                </div>
+              ))}
           </div>
         ) : (
-          <p className="text-sm text-slate-500">No hay historias completadas aún.</p>
+          <div className="text-center py-8">
+            <FiCheckCircle className="w-10 h-10 text-neutral-200 mx-auto mb-2" />
+            <p className="text-sm text-neutral-400">No hay historias completadas aún.</p>
+          </div>
         )}
       </div>
     </div>

@@ -7,7 +7,7 @@ import FileUpload from './components/FileUpload';
 import TabSystem from './components/TabSystem';
 import KanbanTab from './components/KanbanTab';
 import Dashboard from './components/Dashboard';
-import UserStoryManagement from './components/UserStoryManagement';
+import Sidebar from './components/Sidebar';
 import VideoTranscription from './components/VideoTranscription';
 import ScopeView from './components/ScopeView';
 import TestPlanView from './components/TestPlanView';
@@ -764,13 +764,40 @@ function App() {
     }
   };
 
+  // Handler para crear una historia desde una pregunta respondida
+  const handleCreateStoryFromPregunta = async (storyData) => {
+    try {
+      const response = await api.createStory(storyData);
+      setStories(prev => [...prev, response.data]);
+      return response.data;
+    } catch (err) {
+      console.error('Error al crear historia desde pregunta:', err);
+      setError('Error al crear historia: ' + (err.response?.data?.message || err.message));
+      throw err;
+    }
+  };
+
+  // Handler para actualizar criterios de una historia existente (desde preguntas)
+  const handleUpdateStoryFromPregunta = async (storyId, updateData) => {
+    try {
+      const response = await api.updateStory(storyId, updateData);
+      setStories(prev => prev.map(s => s._id === storyId ? response.data : s));
+      return response.data;
+    } catch (err) {
+      console.error('Error al actualizar historia desde pregunta:', err);
+      setError('Error al actualizar historia: ' + (err.response?.data?.message || err.message));
+      throw err;
+    }
+  };
+
   return (
-    <div className="bg-neutral-100 text-neutral-900 min-h-screen">
-      <div className="max-w-[1800px] mx-auto px-4 md:px-8 py-6">
+    <div className="bg-neutral-100 text-neutral-900 min-h-screen flex flex-col">
+      {/* Header - full width */}
+      <div className="px-4 md:px-8 py-4">
         <Header />
 
         {error && (
-          <div className="mb-6 p-4 bg-danger-50 text-danger-700 rounded-apple-lg border border-danger-100 flex items-center justify-between animate-fade-in">
+          <div className="mt-4 p-4 bg-danger-50 text-danger-700 rounded-apple-lg border border-danger-100 flex items-center justify-between animate-fade-in">
             <span>{error}</span>
             <button
               className="ml-4 p-1 hover:bg-danger-100 rounded-full transition-colors"
@@ -782,10 +809,14 @@ function App() {
             </button>
           </div>
         )}
+      </div>
 
-        <UserStoryManagement 
-          currentJsonFile={currentJsonFile} 
-          onFileUpload={handleImportJSON} 
+      {/* Main content area: Sidebar + Content */}
+      <div className="flex flex-1 overflow-hidden">
+        {/* Sidebar */}
+        <Sidebar
+          currentJsonFile={currentJsonFile}
+          onFileUpload={handleImportJSON}
           onFileSelect={handleLoadJsonFile}
           onFileDelete={handleDeleteJsonFile}
           jsonFiles={jsonFiles}
@@ -794,69 +825,84 @@ function App() {
           onStartDateChange={handleStartDateChange}
           onEndDateChange={handleEndDateChange}
         />
-        
-        {loading ? (
-          <p className="mt-8 text-center text-slate-500">Cargando...</p>
-        ) : (
-          <TabSystem
-            activeTab={activeTab}
-            onTabChange={setActiveTab}
-            tabs={{
-              'Kanban': (
-                <KanbanTab
-                  columns={columns}
-                  stories={stories}
-                  onAddColumn={handleAddColumn}
-                  onAutoAddColumns={handleAutoAddColumns}
-                  onStoryMove={handleStoryMove}
-                  onOpenStoryModal={openStoryModal}
-                  onCriterionCheck={handleCriterionCheck}
-                  onCriterionDelete={handleCriterionDelete}
-                  onCriteriaReorder={handleCriteriaReorder}
-                  onDeleteStory={handleDeleteStory}
-                  currentJsonFile={currentJsonFile}
-                />
-              ),
-              'Dashboard': (
-                <Dashboard
-                  stories={stories}
-                  columns={columns}
-                  currentJsonFile={currentJsonFile}
-                  startDate={chartStartDate}
-                  endDate={chartEndDate}
-                />
-              ),
-              'Alcance': (
-                <ScopeView
-                  columns={columns}
-                  stories={stories}
-                />
-              ),
-              'Plan de pruebas': (
-                <TestPlanView
-                  columns={columns}
-                  stories={stories}
-                />
-              ),
-              'Transcripción': (
-                <VideoTranscription />
-              ),
-              'Preguntas': (
-                <PreguntasTab preguntas={preguntas} currentJsonFile={currentJsonFile} />
-              )
-            }}
-          />
-        )}
 
-        {/* Story Modal */}
-        <StoryModal
-          isOpen={modalOpen}
-          onClose={() => setModalOpen(false)}
-          onSave={handleSaveStory}
-          story={currentStory}
-          currentJsonFile={currentJsonFile}
-        />
+        {/* Main content */}
+        <main className="flex-1 overflow-y-auto px-4 md:px-8 py-4">
+          {loading ? (
+            <div className="flex items-center justify-center h-64">
+              <div className="text-center">
+                <div className="w-8 h-8 border-2 border-primary-500 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
+                <p className="text-neutral-500 text-sm">Cargando...</p>
+              </div>
+            </div>
+          ) : (
+            <TabSystem
+              activeTab={activeTab}
+              onTabChange={setActiveTab}
+              tabs={{
+                'Kanban': (
+                  <KanbanTab
+                    columns={columns}
+                    stories={stories}
+                    onAddColumn={handleAddColumn}
+                    onAutoAddColumns={handleAutoAddColumns}
+                    onStoryMove={handleStoryMove}
+                    onOpenStoryModal={openStoryModal}
+                    onCriterionCheck={handleCriterionCheck}
+                    onCriterionDelete={handleCriterionDelete}
+                    onCriteriaReorder={handleCriteriaReorder}
+                    onDeleteStory={handleDeleteStory}
+                    currentJsonFile={currentJsonFile}
+                  />
+                ),
+                'Dashboard': (
+                  <Dashboard
+                    stories={stories}
+                    columns={columns}
+                    currentJsonFile={currentJsonFile}
+                    startDate={chartStartDate}
+                    endDate={chartEndDate}
+                  />
+                ),
+                'Alcance': (
+                  <ScopeView
+                    columns={columns}
+                    stories={stories}
+                  />
+                ),
+                'Plan de pruebas': (
+                  <TestPlanView
+                    columns={columns}
+                    stories={stories}
+                  />
+                ),
+                'Transcripción': (
+                  <VideoTranscription />
+                ),
+                'Preguntas': (
+                  <PreguntasTab
+                    preguntas={preguntas}
+                    currentJsonFile={currentJsonFile}
+                    columns={columns}
+                    stories={stories}
+                    onCreateStory={handleCreateStoryFromPregunta}
+                    onUpdateStory={handleUpdateStoryFromPregunta}
+                  />
+                )
+              }}
+            />
+          )}
+        </main>
       </div>
+
+      {/* Story Modal */}
+      <StoryModal
+        isOpen={modalOpen}
+        onClose={() => setModalOpen(false)}
+        onSave={handleSaveStory}
+        story={currentStory}
+        currentJsonFile={currentJsonFile}
+      />
     </div>
   );
 };

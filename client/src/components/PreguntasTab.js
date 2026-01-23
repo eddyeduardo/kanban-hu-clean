@@ -2,15 +2,13 @@ import React, { useState, useEffect, useCallback } from 'react';
 import api from '../services/api';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { FiDownload } from 'react-icons/fi';
+import { FiDownload, FiCheck, FiPlus } from 'react-icons/fi';
 
 /**
- * Componente para mostrar preguntas y permitir respuestas
- * @param {Object} props - Propiedades del componente
- * @param {Array} props.preguntas - Array de preguntas a mostrar
- * @param {string} props.currentJsonFile - Nombre del archivo JSON actual
+ * Componente para mostrar preguntas y permitir respuestas.
+ * Al guardar una respuesta, crea una historia de usuario en la columna "Por hacer".
  */
-const PreguntasTab = ({ preguntas = [], currentJsonFile }) => {
+const PreguntasTab = ({ preguntas = [], currentJsonFile, onCreateStory, onUpdateStory, columns = [], stories = [] }) => {
   console.log('PreguntasTab - Props recibidas:', { preguntas, currentJsonFile });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -62,21 +60,83 @@ const PreguntasTab = ({ preguntas = [], currentJsonFile }) => {
     }));
   };
 
-  // Guardar respuesta
+  // Guardar respuesta: si ya existe una historia con ese título, agrega los criterios; si no, crea una nueva
   const guardarRespuesta = async (index) => {
+    const respuesta = respuestas[index];
+    if (!respuesta || respuesta.trim() === '') {
+      setError('Escribe una respuesta antes de guardar.');
+      return;
+    }
+
     try {
-      // Aquí podrías implementar la lógica para guardar la respuesta en el servidor
-      // Por ahora, solo mostramos un mensaje de éxito
-      console.log('Respuesta guardada:', { preguntaIndex: index, respuesta: respuestas[index] });
-      // Actualizar respuestas guardadas
+      // Buscar la columna "Por hacer" (case-insensitive)
+      const porHacerColumn = columns.find(
+        col => col.name.toLowerCase() === 'por hacer'
+      );
+
+      if (!porHacerColumn) {
+        setError('No se encontró la columna "Por hacer". Créala primero en el tablero.');
+        return;
+      }
+
+      const pregunta = preguntas[index];
+
+      // Extraer criterios de aceptación de la respuesta
+      const lineas = respuesta.split('\n').filter(l => l.trim() !== '');
+      const newCriteria = lineas.map(linea => ({
+        text: linea.trim().replace(/^[-•*]\s*/, ''),
+        checked: false
+      }));
+
+      if (newCriteria.length === 0) {
+        newCriteria.push({ text: respuesta.trim(), checked: false });
+      }
+
+      // Buscar si ya existe una historia con el mismo título (pregunta)
+      const existingStory = stories.find(
+        s => s.title && s.title.trim().toLowerCase() === pregunta.trim().toLowerCase()
+      );
+
+      let action = 'created';
+
+      if (existingStory && onUpdateStory) {
+        // Agregar los nuevos criterios a la historia existente (sin duplicar)
+        const existingTexts = (existingStory.criteria || []).map(c => c.text.toLowerCase());
+        const uniqueNewCriteria = newCriteria.filter(
+          c => !existingTexts.includes(c.text.toLowerCase())
+        );
+
+        if (uniqueNewCriteria.length === 0) {
+          setError('Todos los criterios ya existen en la historia.');
+          return;
+        }
+
+        const mergedCriteria = [...(existingStory.criteria || []), ...uniqueNewCriteria];
+        await onUpdateStory(existingStory._id, { criteria: mergedCriteria });
+        action = 'updated';
+      } else if (onCreateStory) {
+        // Crear nueva historia
+        const storyData = {
+          title: pregunta,
+          description: respuesta,
+          criteria: newCriteria,
+          column: porHacerColumn._id,
+          jsonFileName: currentJsonFile || null,
+          user: 'Por hacer'
+        };
+        await onCreateStory(storyData);
+      }
+
+      // Marcar como guardada con el tipo de acción
       setRespuestasGuardadas(prev => ({
         ...prev,
-        [index]: respuestas[index] || 'Sin respuesta'
+        [index]: { text: respuesta, action }
       }));
-      alert('Respuesta guardada exitosamente');
+
+      setError('');
     } catch (err) {
       console.error('Error al guardar la respuesta:', err);
-      alert('Error al guardar la respuesta');
+      setError('Error al crear/actualizar la historia: ' + (err.message || 'Error desconocido'));
     }
   };
 
@@ -196,83 +256,110 @@ const PreguntasTab = ({ preguntas = [], currentJsonFile }) => {
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mb-4"></div>
-        <p className="text-gray-500">Cargando preguntas...</p>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg">
-        <p className="font-medium">Error al cargar las preguntas</p>
-        <p className="text-sm">{error}</p>
+        <div className="w-8 h-8 border-2 border-primary-500 border-t-transparent rounded-full animate-spin mb-3"></div>
+        <p className="text-neutral-500 text-sm">Cargando preguntas...</p>
       </div>
     );
   }
 
   return (
-    <div className="p-4">
+    <div>
+      {error && (
+        <div className="mb-4 p-3 bg-danger-50 text-danger-700 rounded-apple text-sm border border-danger-100 animate-fade-in">
+          {error}
+        </div>
+      )}
+
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-semibold text-slate-800">Preguntas para Aclarar</h2>
-        <div className="flex items-center space-x-3">
+        <h2 className="text-xl font-semibold text-neutral-900">Preguntas para Aclarar</h2>
+        <div className="flex items-center gap-3">
           {currentJsonFile && (
-            <span className="px-3 py-1 bg-blue-100 text-blue-800 text-sm font-medium rounded-full">
-              Archivo: {currentJsonFile}
+            <span className="badge-primary text-xs">
+              {currentJsonFile}
             </span>
           )}
           <button
             onClick={exportToPDF}
             disabled={!preguntas || preguntas.length === 0 || exporting}
-            className="inline-flex items-center px-3 py-1 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="btn btn-secondary text-sm inline-flex items-center gap-1.5"
           >
-            <FiDownload className="mr-1.5 h-4 w-4" />
-            {exporting ? 'Exportando...' : 'Exportar PDF'}
+            <FiDownload className="w-4 h-4" />
+            {exporting ? 'Exportando...' : 'PDF'}
           </button>
         </div>
       </div>
       
       {!preguntas || preguntas.length === 0 ? (
-        <div className="text-center py-12 bg-gray-50 rounded-lg border border-gray-200">
-          <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <div className="text-center py-12 bg-neutral-50 rounded-apple-lg border border-neutral-200">
+          <svg className="mx-auto h-12 w-12 text-neutral-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
-          <h3 className="mt-2 text-lg font-medium text-gray-900">No hay preguntas disponibles</h3>
-          <p className="mt-1 text-gray-500">Este archivo no contiene preguntas para aclarar.</p>
-          <p className="mt-2 text-sm text-gray-500">Asegúrate de que el archivo JSON tenga una sección 'preguntas_para_aclarar' con un array de preguntas.</p>
+          <h3 className="mt-2 text-lg font-medium text-neutral-900">No hay preguntas disponibles</h3>
+          <p className="mt-1 text-neutral-500">Este archivo no contiene preguntas para aclarar.</p>
+          <p className="mt-2 text-sm text-neutral-400">Asegúrate de que el archivo JSON tenga una sección 'preguntas_para_aclarar'.</p>
         </div>
       ) : (
-        <div className="space-y-6">
-          {preguntas.map((pregunta, index) => (
-            <div key={index} className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-              <h3 className="font-medium text-slate-700 mb-2">Pregunta {index + 1}:</h3>
-              <p className="text-slate-600 mb-4">{pregunta}</p>
-              
-              <div className="mb-3">
-                <label htmlFor={`respuesta-${index}`} className="block text-sm font-medium text-slate-700 mb-1">
-                  Tu respuesta:
-                </label>
-                <textarea
-                  id={`respuesta-${index}`}
-                  rows="3"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                  value={respuestas[index] || ''}
-                  onChange={(e) => handleRespuestaChange(index, e.target.value)}
-                  placeholder="Escribe tu respuesta aquí..."
-                />
+        <div className="space-y-4">
+          <p className="text-xs text-neutral-500">
+            Al guardar una respuesta, se creará una historia de usuario en la columna "Por hacer" con los criterios de aceptación extraídos de tu respuesta (cada línea = un criterio).
+          </p>
+          {preguntas.map((pregunta, index) => {
+            const savedData = respuestasGuardadas[index];
+            const existingStory = stories.find(
+              s => s.title && s.title.trim().toLowerCase() === pregunta.trim().toLowerCase()
+            );
+
+            return (
+              <div key={index} className={`card p-4 ${savedData ? 'border-l-[3px] border-l-success-500' : ''}`}>
+                <div className="flex items-start gap-3 mb-3">
+                  <span className="badge-primary text-xs flex-shrink-0 mt-0.5">
+                    {index + 1}
+                  </span>
+                  <p className="text-sm font-medium text-neutral-800">{pregunta}</p>
+                </div>
+
+                {/* Previous save confirmation */}
+                {savedData && (
+                  <div className="ml-8 mb-3">
+                    <div className="flex items-center gap-2 text-success-600 text-xs mb-1">
+                      <FiCheck className="w-3.5 h-3.5" />
+                      <span className="font-medium">
+                        {savedData.action === 'updated'
+                          ? 'Criterios agregados a historia existente'
+                          : 'Historia creada en "Por hacer"'}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-neutral-400 whitespace-pre-line">{savedData.text}</p>
+                  </div>
+                )}
+
+                {/* Always show textarea to allow adding more criteria */}
+                <div className="ml-8">
+                  <textarea
+                    id={`respuesta-${index}`}
+                    rows="3"
+                    className="input w-full text-sm resize-y"
+                    value={respuestas[index] || ''}
+                    onChange={(e) => handleRespuestaChange(index, e.target.value)}
+                    placeholder={existingStory
+                      ? 'Agrega más criterios de aceptación (cada línea = un criterio)...'
+                      : 'Escribe tu respuesta (cada línea se convierte en un criterio de aceptación)...'}
+                  />
+                  <div className="flex justify-end mt-2">
+                    <button
+                      type="button"
+                      onClick={() => guardarRespuesta(index)}
+                      disabled={!respuestas[index] || respuestas[index].trim() === ''}
+                      className="btn btn-primary text-sm inline-flex items-center gap-1.5"
+                    >
+                      <FiPlus className="w-3.5 h-3.5" />
+                      {existingStory ? 'Agregar Criterios' : 'Crear Historia'}
+                    </button>
+                  </div>
+                </div>
               </div>
-              
-              <div className="flex justify-end">
-                <button
-                  type="button"
-                  onClick={() => guardarRespuesta(index)}
-                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                >
-                  Guardar Respuesta
-                </button>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

@@ -42,26 +42,24 @@ const DateRangeSelector = ({
   };
 
   return (
-    <div className="date-range-selector">
-      <div className="flex flex-col md:flex-row md:space-x-4">
-        <div className="mb-2 md:mb-0">
-          <label className="block text-xs font-medium text-gray-600 mb-1">Fecha Inicio:</label>
-          <input
-            type="date"
-            className="border border-gray-300 rounded p-2 w-full"
-            value={formatDateForInput(startDate)}
-            onChange={(e) => onStartDateChange(new Date(e.target.value))}
-          />
-        </div>
-        <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">Fecha Fin:</label>
-          <input
-            type="date"
-            className="border border-gray-300 rounded p-2 w-full"
-            value={formatDateForInput(endDate)}
-            onChange={(e) => onEndDateChange(new Date(e.target.value))}
-          />
-        </div>
+    <div className="space-y-3">
+      <div>
+        <label className="input-label text-[11px]">Fecha Inicio</label>
+        <input
+          type="date"
+          className="input w-full text-sm"
+          value={formatDateForInput(startDate)}
+          onChange={(e) => onStartDateChange(new Date(e.target.value))}
+        />
+      </div>
+      <div>
+        <label className="input-label text-[11px]">Fecha Fin</label>
+        <input
+          type="date"
+          className="input w-full text-sm"
+          value={formatDateForInput(endDate)}
+          onChange={(e) => onEndDateChange(new Date(e.target.value))}
+        />
       </div>
     </div>
   );

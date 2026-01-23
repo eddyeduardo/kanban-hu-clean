@@ -402,60 +402,60 @@ const ScopeView = ({ columns: propColumns = [], stories: propStories = [] }) => 
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center p-8">
-        <FiRefreshCw className="animate-spin text-blue-500 text-2xl mb-2" />
-        <p className="text-slate-600">Cargando datos del alcance...</p>
+        <FiRefreshCw className="animate-spin text-primary-500 text-2xl mb-2" />
+        <p className="text-neutral-500">Cargando datos del alcance...</p>
       </div>
     );
   }
 
   return (
-    <div className="p-4">
-      <div className="mb-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+    <div className="space-y-6">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-slate-800">Alcance del Proyecto</h2>
-          <p className="text-slate-500">Vista general de las historias por columna</p>
+          <h2 className="text-xl font-semibold text-neutral-900">Alcance del Proyecto</h2>
+          <p className="text-sm text-neutral-500 mt-0.5">Vista general de las historias por columna</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <button
             onClick={reloadData}
             disabled={exporting || loading}
-            className="inline-flex items-center px-3 py-2 border border-slate-300 rounded-md shadow-sm text-sm font-medium text-slate-700 bg-white hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+            className="btn btn-secondary text-xs inline-flex items-center gap-1.5"
           >
-            <FiRefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+            <FiRefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
             Actualizar
           </button>
           <div className="relative inline-block group">
             <button
               disabled={exporting || loading}
-              className="inline-flex items-center px-3 py-2 border border-slate-300 rounded-md shadow-sm text-sm font-medium text-slate-700 bg-white hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+              className="btn btn-secondary text-xs inline-flex items-center gap-1.5"
             >
-              <FiDownload className="mr-2 h-4 w-4" />
+              <FiDownload className="w-3.5 h-3.5" />
               Exportar
             </button>
-            <div className="absolute right-0 mt-1 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10">
+            <div className="absolute right-0 mt-1 w-48 rounded-apple shadow-apple-lg bg-white/95 backdrop-blur-sm border border-neutral-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10">
               <div className="py-1">
                 <button
                   onClick={exportToCSV}
                   disabled={exporting || loading}
-                  className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 flex items-center"
+                  className="w-full text-left px-4 py-2 text-sm text-neutral-700 hover:bg-neutral-50 flex items-center"
                 >
-                  <FaFileCsv className="mr-2 text-green-600" />
+                  <FaFileCsv className="mr-2 text-success-600" />
                   Exportar a CSV
                 </button>
                 <button
                   onClick={exportToExcel}
                   disabled={exporting || loading}
-                  className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 flex items-center"
+                  className="w-full text-left px-4 py-2 text-sm text-neutral-700 hover:bg-neutral-50 flex items-center"
                 >
-                  <FaFileExcel className="mr-2 text-green-700" />
+                  <FaFileExcel className="mr-2 text-success-700" />
                   Exportar a Excel
                 </button>
                 <button
                   onClick={exportToPDF}
                   disabled={exporting || loading}
-                  className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 flex items-center"
+                  className="w-full text-left px-4 py-2 text-sm text-neutral-700 hover:bg-neutral-50 flex items-center"
                 >
-                  <FaFilePdf className="mr-2 text-red-600" />
+                  <FaFilePdf className="mr-2 text-error-600" />
                   Exportar a PDF
                 </button>
               </div>
@@ -465,79 +465,84 @@ const ScopeView = ({ columns: propColumns = [], stories: propStories = [] }) => 
       </div>
 
       {error && (
-        <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded">
+        <div className="p-3 bg-error-50 border border-error-200 text-error-700 rounded-apple">
           {error}
           <button 
             onClick={() => setError(null)}
-            className="float-right font-bold text-red-800"
+            className="float-right font-semibold text-error-800"
           >
             ×
           </button>
         </div>
       )}
 
-      {/* Tarjetas de resumen */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <div className="bg-white p-4 rounded-lg shadow">
-          <h3 className="text-sm font-medium text-slate-500">Total de Historias</h3>
-          <p className="mt-1 text-2xl font-semibold text-slate-900">
-            {totalStories}
-          </p>
-        </div>
-        <div className="bg-white p-4 rounded-lg shadow">
-          <h3 className="text-sm font-medium text-slate-500">Historias Completadas</h3>
-          <p className="mt-1 text-2xl font-semibold text-green-600">
-            {completedStories}
-          </p>
-        </div>
-        <div className="bg-white p-4 rounded-lg shadow">
-          <h3 className="text-sm font-medium text-slate-500">Progreso General</h3>
-          <div className="mt-1">
-            <div className="w-full bg-slate-200 rounded-full h-2.5">
-              <div 
-                className="bg-blue-600 h-2.5 rounded-full" 
-                style={{ width: `${completionPercentage}%` }}
-              />
+      {/* KPI Cards - Estilo Apple */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="card p-5">
+          <div className="flex items-center justify-between mb-3">
+            <div className="w-9 h-9 rounded-apple bg-primary-50 flex items-center justify-center">
+              <FiFileText className="w-4.5 h-4.5 text-primary-500" />
             </div>
-            <p className="mt-1 text-sm text-slate-700">
-              {totalStories > 0 
-                ? `${completionPercentage}% completado`
-                : 'No hay historias'}
-            </p>
+            <span className="text-2xl font-bold text-neutral-900">{totalStories}</span>
           </div>
+          <p className="text-xs text-neutral-500">Total de Historias</p>
+        </div>
+        <div className="card p-5">
+          <div className="flex items-center justify-between mb-3">
+            <div className="w-9 h-9 rounded-apple bg-success-50 flex items-center justify-center">
+              <FiFileText className="w-4.5 h-4.5 text-success-500" />
+            </div>
+            <span className="text-2xl font-bold text-neutral-900">{completedStories}</span>
+          </div>
+          <p className="text-xs text-neutral-500">Historias Completadas</p>
+        </div>
+        <div className="card p-5">
+          <div className="flex items-center justify-between mb-3">
+            <div className="w-9 h-9 rounded-apple bg-purple-50 flex items-center justify-center">
+              <FiFileText className="w-4.5 h-4.5 text-purple-500" />
+            </div>
+            <span className="text-2xl font-bold text-neutral-900">{completionPercentage}%</span>
+          </div>
+          <div className="h-1.5 bg-neutral-100 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-primary-500 rounded-full transition-all duration-500 ease-apple"
+              style={{ width: `${completionPercentage}%` }}
+            />
+          </div>
+          <p className="text-xs text-neutral-500 mt-2">Progreso General</p>
         </div>
       </div>
 
-      {/* Tabla de historias */}
-      <div className="bg-white shadow overflow-hidden rounded-lg">
+      {/* Tabla de historias - Estilo Apple */}
+      <div className="card overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-slate-200">
-            <thead className="bg-slate-50">
+          <table className="min-w-full divide-y divide-neutral-200">
+            <thead className="bg-neutral-50">
               <tr>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                <th scope="col" className="px-6 py-3 text-left text-[11px] font-semibold text-neutral-500 uppercase tracking-wider">
                   Columna
                 </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                <th scope="col" className="px-6 py-3 text-left text-[11px] font-semibold text-neutral-500 uppercase tracking-wider">
                   ID Historia
                 </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                <th scope="col" className="px-6 py-3 text-left text-[11px] font-semibold text-neutral-500 uppercase tracking-wider">
                   Título
                 </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                <th scope="col" className="px-6 py-3 text-left text-[11px] font-semibold text-neutral-500 uppercase tracking-wider">
                   Descripción
                 </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                <th scope="col" className="px-6 py-3 text-left text-[11px] font-semibold text-neutral-500 uppercase tracking-wider">
                   Criterios
                 </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                <th scope="col" className="px-6 py-3 text-left text-[11px] font-semibold text-neutral-500 uppercase tracking-wider">
                   Estado
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-slate-200">
+            <tbody className="bg-white divide-y divide-neutral-100">
               {sortedColumns.length === 0 ? (
                 <tr>
-                  <td colSpan="6" className="px-6 py-4 text-center text-sm text-slate-500">
+                  <td colSpan="6" className="px-6 py-8 text-center text-sm text-neutral-400">
                     No hay columnas disponibles. Crea columnas en el tablero Kanban para ver el alcance.
                   </td>
                 </tr>
@@ -562,41 +567,39 @@ const ScopeView = ({ columns: propColumns = [], stories: propStories = [] }) => 
                       const progress = totalCriteria > 0 ? Math.round((completedCriteria / totalCriteria) * 100) : 0;
                       
                       return (
-                        <tr key={story._id} className={index % 2 === 0 ? 'bg-white' : 'bg-slate-50'}>
+                        <tr key={story._id} className={index % 2 === 0 ? 'bg-white' : 'bg-neutral-50'}>
                           {index === 0 && (
                             <td 
                               rowSpan={columnStories.length} 
-                              className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900 border-r border-slate-200"
+                              className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-neutral-900 border-r border-neutral-100"
                             >
                               {column.name}
                             </td>
                           )}
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500 font-mono">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-500 font-mono">
                             {story.id_historia || 'N/A'}
                           </td>
-                          <td className="px-6 py-4 text-sm font-medium text-slate-900 max-w-xs truncate">
+                          <td className="px-6 py-4 text-sm font-medium text-neutral-900 max-w-xs truncate">
                             {story.title || 'Sin título'}
                           </td>
-                          <td className="px-6 py-4 text-sm text-slate-500 max-w-md truncate">
+                          <td className="px-6 py-4 text-sm text-neutral-500 max-w-md truncate">
                             {story.description || 'Sin descripción'}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="flex items-center">
-                              <div className="w-24 bg-slate-200 rounded-full h-2.5 mr-2">
+                              <div className="w-24 bg-neutral-200 rounded-full h-1.5 mr-2">
                                 <div 
-                                  className="bg-green-600 h-2.5 rounded-full" 
+                                  className="bg-success-500 h-1.5 rounded-full transition-all duration-300" 
                                   style={{ width: `${progress}%` }}
                                 />
                               </div>
-                              <span className="text-xs font-medium text-slate-700">
-                                {completedCriteria}/{totalCriteria}  - {progress}%
+                              <span className="text-[11px] font-medium text-neutral-600">
+                                {completedCriteria}/{totalCriteria} · {progress}%
                               </span>
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                              story.completedAt ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'
-                            }`}>
+                            <span className={`badge-${story.completedAt ? 'success' : 'primary'} text-[11px]`}>
                               {story.completedAt ? 'Completada' : 'En progreso'}
                             </span>
                           </td>
