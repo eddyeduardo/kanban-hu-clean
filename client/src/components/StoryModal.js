@@ -13,6 +13,8 @@ import { FiPlus, FiX, FiTrash2 } from 'react-icons/fi';
 const StoryModal = ({ isOpen, onClose, onSave, story, currentJsonFile }) => {
   const [title, setTitle] = useState('');
   const [idHistoria, setIdHistoria] = useState('');
+  const [esfuerzo, setEsfuerzo] = useState('');
+  const [tipo, setTipo] = useState('');
   const [criteria, setCriteria] = useState([{ id: Date.now(), text: '' }]);
   const criteriaContainerRef = useRef(null);
 
@@ -29,7 +31,9 @@ const StoryModal = ({ isOpen, onClose, onSave, story, currentJsonFile }) => {
       setTitle(story.title || '');
       // Usar el id_historia existente o intentar generarlo si no existe
       setIdHistoria(story.id_historia || '');
-      
+      setEsfuerzo(story.esfuerzo || '');
+      setTipo(story.tipo || '');
+
       // Set criteria from story
       if (story.criteria && Array.isArray(story.criteria) && story.criteria.length > 0) {
         setCriteria(story.criteria.map((c, index) => ({
@@ -42,6 +46,8 @@ const StoryModal = ({ isOpen, onClose, onSave, story, currentJsonFile }) => {
       }
     } else {
       setTitle('');
+      setEsfuerzo('');
+      setTipo('');
       // Generar ID de historia por defecto solo si no hay un ID existente
       if (!story?.id_historia) {
         const clientId = currentJsonFile ? currentJsonFile.substring(0, 5).toUpperCase() : 'NNNNN';
@@ -96,9 +102,11 @@ const StoryModal = ({ isOpen, onClose, onSave, story, currentJsonFile }) => {
       .filter(criterion => criterion.text !== ''); // Remove empty criteria
 
     // Pass the processed data to parent
-    onSave({ 
-      title, 
+    onSave({
+      title,
       id_historia: idHistoria,
+      esfuerzo,
+      tipo,
       criteria: processedCriteria,
       jsonFileName: currentJsonFile || null
     });
@@ -155,6 +163,35 @@ const StoryModal = ({ isOpen, onClose, onSave, story, currentJsonFile }) => {
               </p>
             </div>
             
+            <div className="grid grid-cols-2 gap-3 mb-4">
+              <div>
+                <label htmlFor="storyEsfuerzo" className="block text-sm font-medium text-slate-700 mb-1">
+                  Esfuerzo (pts):
+                </label>
+                <input
+                  type="text"
+                  id="storyEsfuerzo"
+                  value={esfuerzo}
+                  onChange={(e) => setEsfuerzo(e.target.value)}
+                  className="w-full p-2 border border-slate-300 rounded-md"
+                  placeholder="Ej: 3, 0,5"
+                />
+              </div>
+              <div>
+                <label htmlFor="storyTipo" className="block text-sm font-medium text-slate-700 mb-1">
+                  Tipo:
+                </label>
+                <input
+                  type="text"
+                  id="storyTipo"
+                  value={tipo}
+                  onChange={(e) => setTipo(e.target.value)}
+                  className="w-full p-2 border border-slate-300 rounded-md"
+                  placeholder="Ej: Operativa, Técnica"
+                />
+              </div>
+            </div>
+
             <div className="mb-4">
               <label className="block text-sm font-medium text-slate-700 mb-2">
                 Criterios de Aceptación:

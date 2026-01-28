@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FiChevronDown, FiChevronUp, FiUser, FiEdit2, FiTrash2, FiCheck } from 'react-icons/fi';
+import { FiChevronDown, FiChevronUp, FiUser, FiEdit2, FiTrash2, FiCheck, FiZap, FiTag } from 'react-icons/fi';
 import DraggableCriteriaList from './DraggableCriteriaList';
 
 /**
@@ -82,15 +82,39 @@ const StoryCard = ({
         {story.title || 'Historia sin título'}
       </h3>
 
-      {/* User badge */}
-      {story.user && (
-        <div className="flex items-center mb-2">
+      {/* Metadata badges: User, Esfuerzo, Tipo */}
+      <div className="flex flex-wrap items-center gap-1.5 mb-2">
+        {story.user && (
           <span className="badge-neutral text-xs">
             <FiUser className="w-3 h-3" />
             {story.user}
           </span>
-        </div>
-      )}
+        )}
+        {story.esfuerzo && (
+          <span className="
+            inline-flex items-center gap-1
+            text-[11px] font-medium
+            px-2 py-0.5 rounded-md
+            bg-amber-50 text-amber-700
+            border border-amber-200
+          ">
+            <FiZap className="w-3 h-3" />
+            {story.esfuerzo} pts
+          </span>
+        )}
+        {story.tipo && (
+          <span className="
+            inline-flex items-center gap-1
+            text-[11px] font-medium
+            px-2 py-0.5 rounded-md
+            bg-violet-50 text-violet-700
+            border border-violet-200
+          ">
+            <FiTag className="w-3 h-3" />
+            {story.tipo}
+          </span>
+        )}
+      </div>
 
       {/* Completed date */}
       {isCompleted && (

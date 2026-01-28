@@ -584,12 +584,20 @@ function App() {
           updateData.id_historia = currentStory.id_historia;
           console.log('Manteniendo id_historia existente:', updateData.id_historia);
         }
-        
+
         if (!updateData.user && currentStory.user) {
           updateData.user = currentStory.user;
           console.log('Manteniendo usuario existente:', updateData.user);
         }
-        
+
+        // Preservar esfuerzo y tipo si no se proporcionan nuevos valores
+        if (!('esfuerzo' in updateData) && currentStory.esfuerzo) {
+          updateData.esfuerzo = currentStory.esfuerzo;
+        }
+        if (!('tipo' in updateData) && currentStory.tipo) {
+          updateData.tipo = currentStory.tipo;
+        }
+
         if (!updateData.jsonFileName && currentStory.jsonFileName) {
           updateData.jsonFileName = currentStory.jsonFileName;
           console.log('Manteniendo jsonFileName existente:', updateData.jsonFileName);

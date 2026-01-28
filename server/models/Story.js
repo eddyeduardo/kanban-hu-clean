@@ -39,6 +39,16 @@ const StorySchema = new mongoose.Schema({
     required: true,
     trim: true
   },
+  esfuerzo: {
+    type: String,
+    trim: true,
+    default: ''
+  },
+  tipo: {
+    type: String,
+    trim: true,
+    default: ''
+  },
   criteria: [CriterionSchema],
   column: {
     type: mongoose.Schema.Types.ObjectId,

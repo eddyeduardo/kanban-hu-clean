@@ -45,6 +45,8 @@ router.post('/', async (req, res) => {
       column: req.body.column,
       position: position,
       user: columnName, // Establecer el usuario como el nombre de la columna por defecto
+      esfuerzo: req.body.esfuerzo || '',
+      tipo: req.body.tipo || '',
       // Incluir id_historia si está presente (puede ser undefined)
       ...(req.body.id_historia && { id_historia: req.body.id_historia }),
       // Incluir jsonFileName si está presente
@@ -97,6 +99,16 @@ router.patch('/:id', async (req, res) => {
 
     // Actualizar los campos básicos
     if (req.body.title) story.title = req.body.title;
+
+    // Actualizar esfuerzo si se proporciona
+    if ('esfuerzo' in req.body) {
+      story.esfuerzo = req.body.esfuerzo || '';
+    }
+
+    // Actualizar tipo si se proporciona
+    if ('tipo' in req.body) {
+      story.tipo = req.body.tipo || '';
+    }
 
     // Actualizar id_historia si se proporciona (incluso si es null o vacío)
     if ('id_historia' in req.body) {
@@ -368,18 +380,22 @@ router.post('/import', async (req, res) => {
         console.log('Story data:', {
           titulo: storyData.titulo,
           usuario: storyData.usuario,
+          esfuerzo: storyData.esfuerzo,
+          tipo: storyData.tipo,
           requerimiento: storyData.requerimiento,
           hasCriterios: storyData.criterios_de_aceptacion ? storyData.criterios_de_aceptacion.length : 0
         });
 
         // Usar 'titulo' o 'requerimiento' como título, con 'Sin título' como valor por defecto
         const titulo = storyData.titulo || storyData.requerimiento || 'Sin título';
-        
+
         const story = new Story({
           _id: storyId,
           id_historia: storyData.id_historia || null,
           title: titulo,
           user: storyData.usuario,
+          esfuerzo: storyData.esfuerzo || '',
+          tipo: storyData.tipo || '',
           criteria: criteria,
           column: todoColumn._id,
           position: currentPosition,

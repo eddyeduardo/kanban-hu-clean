@@ -63,25 +63,26 @@ const ScopeView = ({ columns: propColumns = [], stories: propStories = [] }) => 
       
       // Preparar datos para la hoja de cálculo
       const data = [
-        ['Columna', 'ID Historia', 'Título', 'Descripción', 'Criterios', 'Estado', 'Fecha de Finalización']
+        ['Columna', 'ID Historia', 'Título', 'Esfuerzo', 'Tipo', 'Criterios', 'Estado', 'Fecha de Finalización']
       ];
-      
+
       // Recorrer cada columna
       Object.entries(storiesByColumn).forEach(([columnId, columnStories]) => {
         const column = sortedColumns.find(c => c._id === columnId);
         if (!column) return;
-        
+
         columnStories.forEach(story => {
           const totalCriteria = story.criteria?.length || 0;
           const completedCriteria = story.criteria?.filter(c => c.checked).length || 0;
           const progress = totalCriteria > 0 ? Math.round((completedCriteria / totalCriteria) * 100) : 0;
           const completionDate = story.completedAt ? new Date(story.completedAt).toLocaleDateString() : '';
-          
+
           data.push([
             column.name,
             story.id_historia || 'N/A',
             story.title || 'Sin título',
-            story.description || '',
+            story.esfuerzo || '',
+            story.tipo || '',
             `${completedCriteria}/${totalCriteria} (${progress}%)`,
             story.completedAt ? 'Completada' : 'En progreso',
             completionDate
@@ -119,7 +120,8 @@ const ScopeView = ({ columns: propColumns = [], stories: propStories = [] }) => 
         { wch: 20 }, // Columna
         { wch: 15 }, // ID Historia
         { wch: 40 }, // Título
-        { wch: 60 }, // Descripción
+        { wch: 12 }, // Esfuerzo
+        { wch: 15 }, // Tipo
         { wch: 20 }, // Criterios
         { wch: 15 }, // Estado
         { wch: 20 }  // Fecha de Finalización
@@ -193,18 +195,20 @@ const ScopeView = ({ columns: propColumns = [], stories: propStories = [] }) => 
           const completedCriteria = story.criteria?.filter(c => c.checked).length || 0;
           const progress = totalCriteria > 0 ? Math.round((completedCriteria / totalCriteria) * 100) : 0;
           const completionDate = story.completedAt ? new Date(story.completedAt).toLocaleDateString() : '';
-          
+
           tableData.push([
             column.name,
             story.id_historia || 'N/A',
-            { 
+            {
               content: story.title || 'Sin título',
               styles: { fontStyle: 'bold' }
             },
+            story.esfuerzo || '',
+            story.tipo || '',
             `${completedCriteria}/${totalCriteria} (${progress}%)`,
-            { 
-              content: story.completedAt ? '✓ Completada' : 'En progreso',
-              styles: { 
+            {
+              content: story.completedAt ? 'Completada' : 'En progreso',
+              styles: {
                 textColor: story.completedAt ? [0, 128, 0] : [200, 100, 0],
                 fontStyle: story.completedAt ? 'bold' : 'normal'
               }
@@ -223,6 +227,8 @@ const ScopeView = ({ columns: propColumns = [], stories: propStories = [] }) => 
             { content: 'Columna', styles: { halign: 'center', fillColor: [59, 130, 246], textColor: 255, fontStyle: 'bold' } },
             { content: 'ID', styles: { halign: 'center', fillColor: [59, 130, 246], textColor: 255, fontStyle: 'bold' } },
             { content: 'Título', styles: { halign: 'center', fillColor: [59, 130, 246], textColor: 255, fontStyle: 'bold' } },
+            { content: 'Esfuerzo', styles: { halign: 'center', fillColor: [59, 130, 246], textColor: 255, fontStyle: 'bold' } },
+            { content: 'Tipo', styles: { halign: 'center', fillColor: [59, 130, 246], textColor: 255, fontStyle: 'bold' } },
             { content: 'Criterios', styles: { halign: 'center', fillColor: [59, 130, 246], textColor: 255, fontStyle: 'bold' } },
             { content: 'Estado', styles: { halign: 'center', fillColor: [59, 130, 246], textColor: 255, fontStyle: 'bold' } },
             { content: 'Fecha Fin', styles: { halign: 'center', fillColor: [59, 130, 246], textColor: 255, fontStyle: 'bold' } }
@@ -247,12 +253,14 @@ const ScopeView = ({ columns: propColumns = [], stories: propStories = [] }) => 
           lineColor: [200, 200, 200]
         },
         columnStyles: {
-          0: { cellWidth: 25, halign: 'left' },   // Columna
+          0: { cellWidth: 22, halign: 'left' },   // Columna
           1: { cellWidth: 15, halign: 'center' }, // ID
-          2: { cellWidth: 65, halign: 'left' },   // Título
-          3: { cellWidth: 25, halign: 'center' }, // Criterios
-          4: { cellWidth: 25, halign: 'center' }, // Estado
-          5: { cellWidth: 25, halign: 'center' }  // Fecha
+          2: { cellWidth: 45, halign: 'left' },   // Título
+          3: { cellWidth: 15, halign: 'center' }, // Esfuerzo
+          4: { cellWidth: 18, halign: 'center' }, // Tipo
+          5: { cellWidth: 22, halign: 'center' }, // Criterios
+          6: { cellWidth: 22, halign: 'center' }, // Estado
+          7: { cellWidth: 22, halign: 'center' }  // Fecha
         },
         margin: { 
           top: 50,  // Aumentado para dar espacio al título y resumen
@@ -316,29 +324,30 @@ const ScopeView = ({ columns: propColumns = [], stories: propStories = [] }) => 
     try {
       setExporting(true);
       
-      let csvContent = 'Columna,ID Historia,Título,Descripción,Criterios,Estado\n';
-      
+      let csvContent = 'Columna,ID Historia,Título,Esfuerzo,Tipo,Criterios,Estado\n';
+
       // Recorrer cada columna
       Object.entries(storiesByColumn).forEach(([columnId, columnStories]) => {
         const column = sortedColumns.find(c => c._id === columnId);
         if (!column) return;
-        
+
         columnStories.forEach(story => {
           const totalCriteria = story.criteria?.length || 0;
           const completedCriteria = story.criteria?.filter(c => c.checked).length || 0;
           const progress = totalCriteria > 0 ? Math.round((completedCriteria / totalCriteria) * 100) : 0;
-          
+
           // Escapar comas y comillas en los textos
           const escapeCsv = (text) => {
             if (text === null || text === undefined) return '';
             return `"${String(text).replace(/"/g, '""')}"`;
           };
-          
+
           csvContent += [
             escapeCsv(column.name),
             escapeCsv(story.id_historia || 'N/A'),
             escapeCsv(story.title || 'Sin título'),
-            escapeCsv(story.description || ''),
+            escapeCsv(story.esfuerzo || ''),
+            escapeCsv(story.tipo || ''),
             escapeCsv(`${completedCriteria}/${totalCriteria} (${progress}%)`),
             escapeCsv(story.completedAt ? 'Completada' : 'En progreso')
           ].join(',') + '\n';
@@ -528,8 +537,11 @@ const ScopeView = ({ columns: propColumns = [], stories: propStories = [] }) => 
                 <th scope="col" className="px-6 py-3 text-left text-[11px] font-semibold text-neutral-500 uppercase tracking-wider">
                   Título
                 </th>
+                <th scope="col" className="px-6 py-3 text-center text-[11px] font-semibold text-neutral-500 uppercase tracking-wider">
+                  Esfuerzo
+                </th>
                 <th scope="col" className="px-6 py-3 text-left text-[11px] font-semibold text-neutral-500 uppercase tracking-wider">
-                  Descripción
+                  Tipo
                 </th>
                 <th scope="col" className="px-6 py-3 text-left text-[11px] font-semibold text-neutral-500 uppercase tracking-wider">
                   Criterios
@@ -542,7 +554,7 @@ const ScopeView = ({ columns: propColumns = [], stories: propStories = [] }) => 
             <tbody className="bg-white divide-y divide-neutral-100">
               {sortedColumns.length === 0 ? (
                 <tr>
-                  <td colSpan="6" className="px-6 py-8 text-center text-sm text-neutral-400">
+                  <td colSpan="7" className="px-6 py-8 text-center text-sm text-neutral-400">
                     No hay columnas disponibles. Crea columnas en el tablero Kanban para ver el alcance.
                   </td>
                 </tr>
@@ -556,7 +568,7 @@ const ScopeView = ({ columns: propColumns = [], stories: propStories = [] }) => 
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">
                         {column.name}
                       </td>
-                      <td colSpan="5" className="px-6 py-4 text-sm text-slate-500">
+                      <td colSpan="6" className="px-6 py-4 text-sm text-slate-500">
                         No hay historias en esta columna
                       </td>
                     </tr>
@@ -582,8 +594,23 @@ const ScopeView = ({ columns: propColumns = [], stories: propStories = [] }) => 
                           <td className="px-6 py-4 text-sm font-medium text-neutral-900 max-w-xs truncate">
                             {story.title || 'Sin título'}
                           </td>
-                          <td className="px-6 py-4 text-sm text-neutral-500 max-w-md truncate">
-                            {story.description || 'Sin descripción'}
+                          <td className="px-6 py-4 text-center whitespace-nowrap">
+                            {story.esfuerzo ? (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200">
+                                {story.esfuerzo} pts
+                              </span>
+                            ) : (
+                              <span className="text-sm text-neutral-300">-</span>
+                            )}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            {story.tipo ? (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-violet-50 text-violet-700 border border-violet-200">
+                                {story.tipo}
+                              </span>
+                            ) : (
+                              <span className="text-sm text-neutral-300">-</span>
+                            )}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="flex items-center">
