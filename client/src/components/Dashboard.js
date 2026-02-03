@@ -1,8 +1,9 @@
 import React, { useMemo } from 'react';
 import {
-  ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Cell
+  ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Cell,
+  PieChart, Pie
 } from 'recharts';
-import { FiUser, FiCheckCircle, FiDownload, FiTrendingUp, FiClock, FiLayers, FiTarget } from 'react-icons/fi';
+import { FiUser, FiCheckCircle, FiDownload, FiTrendingUp, FiClock, FiLayers, FiTarget, FiZap } from 'react-icons/fi';
 import * as XLSX from 'xlsx';
 
 /**
@@ -34,6 +35,69 @@ const Dashboard = ({ stories, columns, currentJsonFile, startDate, endDate }) =>
       acc + (new Date(story.completedAt) - new Date(story.createdAt)) / (1000 * 60 * 60 * 24), 0)
       / completedStoriesWithDuration.length)
     : 0;
+
+  // Métricas por tipo de tarea (esfuerzo en horas): planificado vs realizado
+  const tipoMetrics = useMemo(() => {
+    const TIPOS_ORDEN = ['Operativa', 'Soporte', 'Comercial', 'Administrativa'];
+    const TIPO_CONFIG = {
+      'Operativa': { color: '#0a84ff', colorLight: '#0a84ff22', text: 'text-blue-700' },
+      'Soporte': { color: '#ff9f0a', colorLight: '#ff9f0a22', text: 'text-amber-700' },
+      'Comercial': { color: '#30d158', colorLight: '#30d15822', text: 'text-emerald-700' },
+      'Administrativa': { color: '#bf5af2', colorLight: '#bf5af222', text: 'text-violet-700' },
+    };
+
+    // Normalizar tipos para manejar variaciones de género (masculino/femenino)
+    const normalizeTipo = (tipo) => {
+      if (!tipo) return '';
+      const tipoLower = tipo.toLowerCase().trim();
+      // Mapear variaciones al tipo canónico
+      if (tipoLower === 'operativa' || tipoLower === 'operativo') return 'Operativa';
+      if (tipoLower === 'administrativa' || tipoLower === 'administrativo') return 'Administrativa';
+      if (tipoLower === 'soporte') return 'Soporte';
+      if (tipoLower === 'comercial') return 'Comercial';
+      return tipo; // Devolver original si no coincide
+    };
+
+    const parseEsfuerzo = (val) => {
+      if (!val) return 0;
+      const num = parseFloat(String(val).replace(',', '.'));
+      return isNaN(num) ? 0 : num;
+    };
+
+    // Acumular horas planificadas y realizadas por tipo
+    const tipoMap = {};
+    TIPOS_ORDEN.forEach(t => { tipoMap[t] = { planificado: 0, realizado: 0 }; });
+
+    stories.forEach(story => {
+      const tipoNormalizado = normalizeTipo(story.tipo);
+      const hrs = parseEsfuerzo(story.esfuerzo);
+      if (tipoMap.hasOwnProperty(tipoNormalizado)) {
+        tipoMap[tipoNormalizado].planificado += hrs;
+        if (story.completedAt) {
+          tipoMap[tipoNormalizado].realizado += hrs;
+        }
+      }
+    });
+
+    const totalPlanificado = Object.values(tipoMap).reduce((a, b) => a + b.planificado, 0);
+    const totalRealizado = Object.values(tipoMap).reduce((a, b) => a + b.realizado, 0);
+
+    const items = TIPOS_ORDEN.map(tipo => ({
+      tipo,
+      planificado: tipoMap[tipo].planificado,
+      realizado: tipoMap[tipo].realizado,
+      porcentaje: totalPlanificado > 0 ? Math.round((tipoMap[tipo].planificado / totalPlanificado) * 100) : 0,
+      progreso: tipoMap[tipo].planificado > 0 ? Math.round((tipoMap[tipo].realizado / tipoMap[tipo].planificado) * 100) : 0,
+      config: TIPO_CONFIG[tipo],
+    }));
+
+    // Datos para el donut chart (solo tipos con horas > 0, o un placeholder)
+    const donutData = items
+      .filter(i => i.planificado > 0)
+      .map(i => ({ name: i.tipo, value: i.planificado, color: i.config.color }));
+
+    return { items, donutData, totalPlanificado, totalRealizado };
+  }, [stories]);
 
   // Métricas por usuario
   const userMetrics = useMemo(() => {
@@ -70,15 +134,55 @@ const Dashboard = ({ stories, columns, currentJsonFile, startDate, endDate }) =>
       .sort((a, b) => b.completionRate - a.completionRate);
   }, [stories]);
 
+  // Métricas de esfuerzo por persona y tipo de tarea
+  const userEffortMetrics = useMemo(() => {
+    const TIPOS_ORDEN = ['Operativa', 'Soporte', 'Comercial', 'Administrativa'];
+    const users = [...new Set(stories.map(s => s.user || 'Sin asignar'))].sort();
+
+    const normalizeTipo = (tipo) => {
+      if (!tipo) return '';
+      const tipoLower = tipo.toLowerCase().trim();
+      if (tipoLower === 'operativa' || tipoLower === 'operativo') return 'Operativa';
+      if (tipoLower === 'administrativa' || tipoLower === 'administrativo') return 'Administrativa';
+      if (tipoLower === 'soporte') return 'Soporte';
+      if (tipoLower === 'comercial') return 'Comercial';
+      return tipo;
+    };
+
+    const parseEsfuerzo = (val) => {
+      if (!val) return 0;
+      const num = parseFloat(String(val).replace(',', '.'));
+      return isNaN(num) ? 0 : num;
+    };
+
+    return users.map(user => {
+      const userStories = stories.filter(s => (s.user || 'Sin asignar') === user);
+      const metrics = TIPOS_ORDEN.map(tipo => {
+        const storiesOfThisType = userStories.filter(s => normalizeTipo(s.tipo) === tipo);
+        const planificado = storiesOfThisType.reduce((acc, s) => acc + parseEsfuerzo(s.esfuerzo), 0);
+        const realizado = storiesOfThisType.reduce((acc, s) => s.completedAt ? acc + parseEsfuerzo(s.esfuerzo) : acc, 0);
+        return { tipo, planificado, realizado };
+      }).filter(m => m.planificado > 0);
+
+      const totalPlan = metrics.reduce((a, b) => a + b.planificado, 0);
+      const totalReal = metrics.reduce((a, b) => a + b.realizado, 0);
+
+      return { user, metrics, totalPlan, totalReal };
+    }).filter(u => u.totalPlan > 0)
+      .sort((a, b) => b.totalPlan - a.totalPlan);
+  }, [stories]);
+
   // Métricas por proyecto
   const projectMetrics = useMemo(() => {
     const projectMap = new Map();
     stories.forEach(story => {
       let clientId = 'Sin proyecto';
       if (story.id_historia) {
-        const match = story.id_historia.match(/^HU-([A-Za-z0-9]{2,5})-/i);
+        // Extraer prefijo del proyecto: "ANDERSEN-001" → "ANDERSEN", "HU-DOBRA-001" → "HU-DOBRA"
+        const match = story.id_historia.match(/^(.+?)-\d+$/i);
         if (match && match[1]) clientId = match[1];
-      } else if (story.jsonFileName) {
+      }
+      if (clientId === 'Sin proyecto' && story.jsonFileName) {
         clientId = story.jsonFileName.replace('.json', '');
       }
       if (!projectMap.has(clientId)) {
@@ -163,21 +267,21 @@ const Dashboard = ({ stories, columns, currentJsonFile, startDate, endDate }) =>
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 w-full max-w-full box-border">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <div className="min-w-0">
           <h2 className="text-xl font-semibold text-neutral-900">Dashboard</h2>
           {currentJsonFile && (
-            <p className="text-sm text-neutral-500 mt-0.5">{currentJsonFile}</p>
+            <p className="text-sm text-neutral-500 mt-0.5 truncate">{currentJsonFile}</p>
           )}
         </div>
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 w-full">
         {/* Progress */}
-        <div className="card p-5">
+        <div className="card p-4 min-w-0">
           <div className="flex items-center justify-between mb-3">
             <div className="w-9 h-9 rounded-apple bg-primary-50 flex items-center justify-center">
               <FiTrendingUp className="w-4.5 h-4.5 text-primary-500" />
@@ -194,7 +298,7 @@ const Dashboard = ({ stories, columns, currentJsonFile, startDate, endDate }) =>
         </div>
 
         {/* Stories */}
-        <div className="card p-5">
+        <div className="card p-4 min-w-0">
           <div className="flex items-center justify-between mb-3">
             <div className="w-9 h-9 rounded-apple bg-success-50 flex items-center justify-center">
               <FiCheckCircle className="w-4.5 h-4.5 text-success-500" />
@@ -210,7 +314,7 @@ const Dashboard = ({ stories, columns, currentJsonFile, startDate, endDate }) =>
         </div>
 
         {/* Criteria */}
-        <div className="card p-5">
+        <div className="card p-4 min-w-0">
           <div className="flex items-center justify-between mb-3">
             <div className="w-9 h-9 rounded-apple bg-purple-50 flex items-center justify-center">
               <FiTarget className="w-4.5 h-4.5 text-purple-500" />
@@ -227,7 +331,7 @@ const Dashboard = ({ stories, columns, currentJsonFile, startDate, endDate }) =>
         </div>
 
         {/* Avg Time */}
-        <div className="card p-5">
+        <div className="card p-4 min-w-0">
           <div className="flex items-center justify-between mb-3">
             <div className="w-9 h-9 rounded-apple bg-warning-50 flex items-center justify-center">
               <FiClock className="w-4.5 h-4.5 text-warning-500" />
@@ -238,16 +342,204 @@ const Dashboard = ({ stories, columns, currentJsonFile, startDate, endDate }) =>
         </div>
       </div>
 
+      {/* Esfuerzo por Tipo de Tarea — Donut + Planificado vs Realizado */}
+      <div className="card p-4 sm:p-6">
+        <div className="flex items-center gap-2 mb-5">
+          <FiZap className="w-5 h-5 text-neutral-400 flex-shrink-0" />
+          <h3 className="text-base font-semibold text-neutral-900">Esfuerzo por Tipo de Tarea</h3>
+        </div>
+
+        <div className="flex flex-col lg:flex-row items-center lg:items-start gap-6 lg:gap-8">
+          {/* Donut Chart — distribución planificada */}
+          <div className="relative flex-shrink-0" style={{ width: 200, height: 200 }}>
+            {tipoMetrics.donutData.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={tipoMetrics.donutData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={60}
+                    outerRadius={90}
+                    paddingAngle={3}
+                    dataKey="value"
+                    stroke="none"
+                    animationBegin={0}
+                    animationDuration={800}
+                  >
+                    {tipoMetrics.donutData.map((entry, idx) => (
+                      <Cell key={idx} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    content={({ active, payload }) => {
+                      if (active && payload && payload.length) {
+                        const d = payload[0].payload;
+                        return (
+                          <div className="bg-white/95 backdrop-blur-sm border border-neutral-200 shadow-apple-lg rounded-apple px-3 py-2">
+                            <p className="text-xs font-semibold" style={{ color: d.color }}>{d.name}</p>
+                            <p className="text-xs text-neutral-600">{d.value % 1 === 0 ? d.value : d.value.toFixed(1)} hrs</p>
+                          </div>
+                        );
+                      }
+                      return null;
+                    }}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="w-full h-full rounded-full border-[12px] border-neutral-100 flex items-center justify-center">
+                <span className="text-xs text-neutral-400">Sin datos</span>
+              </div>
+            )}
+            {/* Centro del donut */}
+            {tipoMetrics.donutData.length > 0 && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                <span className="text-2xl font-bold text-neutral-900">
+                  {tipoMetrics.totalPlanificado % 1 === 0 ? tipoMetrics.totalPlanificado : tipoMetrics.totalPlanificado.toFixed(1)}
+                </span>
+                <span className="text-[11px] text-neutral-400 -mt-0.5">hrs totales</span>
+              </div>
+            )}
+          </div>
+
+          {/* Breakdown por tipo: planificado vs realizado */}
+          <div className="flex-1 w-full min-w-0 space-y-4">
+            {tipoMetrics.items.map(({ tipo, planificado, realizado, porcentaje, progreso, config }) => {
+              const fmtHrs = (v) => v % 1 === 0 ? v : v.toFixed(1);
+              return (
+                <div key={tipo} className="group">
+                  {/* Encabezado del tipo */}
+                  <div className="flex items-center justify-between mb-1.5">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: config.color }} />
+                      <span className="text-sm font-semibold text-neutral-900">{tipo}</span>
+                      <span className={`text-[11px] font-medium ${config.text}`}>{porcentaje}%</span>
+                    </div>
+                    <div className="flex items-baseline gap-1">
+                      <span className="text-sm font-bold text-neutral-900">{fmtHrs(realizado)}</span>
+                      <span className="text-[11px] text-neutral-400">/ {fmtHrs(planificado)} hrs</span>
+                    </div>
+                  </div>
+
+                  {/* Barra de progreso: planificado (fondo) vs realizado (relleno) */}
+                  <div className="h-2 rounded-full overflow-hidden" style={{ backgroundColor: config.colorLight }}>
+                    <div
+                      className="h-full rounded-full transition-all duration-700 ease-apple"
+                      style={{ width: `${progreso}%`, backgroundColor: config.color }}
+                    />
+                  </div>
+
+                  {/* Label de progreso */}
+                  <div className="flex justify-between mt-1">
+                    <span className="text-[11px] text-neutral-400">
+                      {progreso === 100 ? 'Completado' : progreso === 0 ? 'Pendiente' : `${progreso}% realizado`}
+                    </span>
+                    {planificado > 0 && realizado < planificado && (
+                      <span className="text-[11px] text-neutral-400">
+                        Restan {fmtHrs(planificado - realizado)} hrs
+                      </span>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+
+            {/* Resumen total */}
+            <div className="pt-3 mt-1 border-t border-neutral-100 flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-1.5">
+                  <div className="w-2 h-2 rounded-full bg-neutral-300" />
+                  <span className="text-xs text-neutral-500">
+                    Planificado: <span className="font-semibold text-neutral-700">
+                      {tipoMetrics.totalPlanificado % 1 === 0 ? tipoMetrics.totalPlanificado : tipoMetrics.totalPlanificado.toFixed(1)} hrs
+                    </span>
+                  </span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <div className="w-2 h-2 rounded-full bg-neutral-900" />
+                  <span className="text-xs text-neutral-500">
+                    Realizado: <span className="font-semibold text-neutral-700">
+                      {tipoMetrics.totalRealizado % 1 === 0 ? tipoMetrics.totalRealizado : tipoMetrics.totalRealizado.toFixed(1)} hrs
+                    </span>
+                  </span>
+                </div>
+              </div>
+              <span className="text-sm font-bold" style={{ color: tipoMetrics.totalPlanificado > 0 && tipoMetrics.totalRealizado >= tipoMetrics.totalPlanificado ? '#30d158' : '#0a84ff' }}>
+                {tipoMetrics.totalPlanificado > 0 ? Math.round((tipoMetrics.totalRealizado / tipoMetrics.totalPlanificado) * 100) : 0}%
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Esfuerzo por Persona y Tipo — Nueva sección solicitada */}
+      {userEffortMetrics.length > 0 && (
+        <div className="card p-4 sm:p-6 animate-in">
+          <div className="flex items-center gap-2 mb-5">
+            <FiUser className="w-5 h-5 text-neutral-400 flex-shrink-0" />
+            <h3 className="text-base font-semibold text-neutral-900">Esfuerzo por Persona y Tipo de Tarea</h3>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {userEffortMetrics.map((userMetric, idx) => (
+              <div key={userMetric.user} className="p-4 bg-neutral-50 rounded-apple-lg border border-neutral-100 flex flex-col">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-[10px] font-bold" style={{ backgroundColor: COLORS[idx % COLORS.length] }}>
+                      {userMetric.user.charAt(0).toUpperCase()}
+                    </div>
+                    <span className="text-sm font-bold text-neutral-900 truncate max-w-[120px]">{userMetric.user}</span>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-[10px] text-neutral-400 uppercase tracking-wider font-medium">Total</p>
+                    <p className="text-xs font-bold text-neutral-900">{userMetric.totalReal.toFixed(1)} / {userMetric.totalPlan.toFixed(1)} hrs</p>
+                  </div>
+                </div>
+
+                <div className="space-y-3 mt-auto">
+                  {userMetric.metrics.map((m) => {
+                    const TIPO_CONFIG = {
+                      'Operativa': { color: '#0a84ff' },
+                      'Soporte': { color: '#ff9f0a' },
+                      'Comercial': { color: '#30d158' },
+                      'Administrativa': { color: '#bf5af2' },
+                    };
+                    const config = TIPO_CONFIG[m.tipo] || { color: '#8e8e93' };
+                    const progreso = m.planificado > 0 ? Math.round((m.realizado / m.planificado) * 100) : 0;
+
+                    return (
+                      <div key={m.tipo}>
+                        <div className="flex justify-between text-[10px] mb-1">
+                          <span className="font-medium text-neutral-600">{m.tipo}</span>
+                          <span className="text-neutral-400">{m.realizado.toFixed(1)} / {m.planificado.toFixed(1)} hrs</span>
+                        </div>
+                        <div className="h-1 bg-neutral-200 rounded-full overflow-hidden">
+                          <div
+                            className="h-full rounded-full transition-all duration-500"
+                            style={{ width: `${progreso}%`, backgroundColor: config.color }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Project Progress */}
-      <div className="card p-6">
-        <div className="flex items-center justify-between mb-5">
-          <div className="flex items-center gap-2">
-            <FiLayers className="w-5 h-5 text-neutral-400" />
+      <div className="card p-4 sm:p-6">
+        <div className="flex items-center justify-between mb-5 flex-wrap gap-2">
+          <div className="flex items-center gap-2 min-w-0">
+            <FiLayers className="w-5 h-5 text-neutral-400 flex-shrink-0" />
             <h3 className="text-base font-semibold text-neutral-900">Progreso por Proyecto</h3>
           </div>
           <button
             onClick={exportProjectsToExcel}
-            className="btn btn-secondary text-xs inline-flex items-center gap-1.5"
+            className="btn btn-secondary text-xs inline-flex items-center gap-1.5 flex-shrink-0"
           >
             <FiDownload className="w-3.5 h-3.5" />
             Excel
@@ -257,7 +549,7 @@ const Dashboard = ({ stories, columns, currentJsonFile, startDate, endDate }) =>
         {projectMetrics.length > 0 ? (
           <div className="space-y-5">
             {/* Bar Chart */}
-            <div className="h-48">
+            <div className="h-48 w-full min-w-0">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart
                   data={projectMetrics}
@@ -286,7 +578,7 @@ const Dashboard = ({ stories, columns, currentJsonFile, startDate, endDate }) =>
             </div>
 
             {/* Project cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
               {projectMetrics.map((project, index) => (
                 <div key={project.name} className="p-4 bg-neutral-50 rounded-apple-lg border border-neutral-100">
                   <div className="flex items-center gap-2 mb-2">
@@ -323,15 +615,15 @@ const Dashboard = ({ stories, columns, currentJsonFile, startDate, endDate }) =>
       </div>
 
       {/* User Progress */}
-      <div className="card p-6">
-        <div className="flex items-center justify-between mb-5">
-          <div className="flex items-center gap-2">
-            <FiUser className="w-5 h-5 text-neutral-400" />
+      <div className="card p-4 sm:p-6">
+        <div className="flex items-center justify-between mb-5 flex-wrap gap-2">
+          <div className="flex items-center gap-2 min-w-0">
+            <FiUser className="w-5 h-5 text-neutral-400 flex-shrink-0" />
             <h3 className="text-base font-semibold text-neutral-900">Progreso por Asignado</h3>
           </div>
           <button
             onClick={exportUsersToExcel}
-            className="btn btn-secondary text-xs inline-flex items-center gap-1.5"
+            className="btn btn-secondary text-xs inline-flex items-center gap-1.5 flex-shrink-0"
           >
             <FiDownload className="w-3.5 h-3.5" />
             Excel
@@ -341,7 +633,7 @@ const Dashboard = ({ stories, columns, currentJsonFile, startDate, endDate }) =>
         {userMetrics.length > 0 ? (
           <div className="space-y-5">
             {/* Bar Chart */}
-            <div className="h-48">
+            <div className="h-48 w-full min-w-0">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart
                   data={userMetrics}
@@ -399,9 +691,9 @@ const Dashboard = ({ stories, columns, currentJsonFile, startDate, endDate }) =>
       </div>
 
       {/* Recently Completed Stories */}
-      <div className="card p-6">
+      <div className="card p-4 sm:p-6">
         <div className="flex items-center gap-2 mb-4">
-          <FiCheckCircle className="w-5 h-5 text-success-500" />
+          <FiCheckCircle className="w-5 h-5 text-success-500 flex-shrink-0" />
           <h3 className="text-base font-semibold text-neutral-900">Completadas Recientemente</h3>
         </div>
 

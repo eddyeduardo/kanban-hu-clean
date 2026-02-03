@@ -21,7 +21,7 @@ const KanbanTab = ({
   currentJsonFile
 }) => {
   return (
-    <div className="kanban-tab">
+    <div className="kanban-tab w-full max-w-full">
       {/* Section Header */}
       <div className="flex items-center gap-3 mb-6">
         <div className="w-10 h-10 rounded-apple-lg bg-primary-500 flex items-center justify-center">
@@ -47,30 +47,31 @@ const KanbanTab = ({
         stories={stories}
       />
 
-      {/* Kanban Board */}
-      <SimpleKanban
-        columns={columns}
-        stories={stories}
-        onStoryMove={onStoryMove}
-        onOpenStoryModal={onOpenStoryModal}
-        onCriterionCheck={onCriterionCheck}
-        onCriterionDelete={onCriterionDelete}
-        onCriteriaReorder={onCriteriaReorder}
-        onDeleteStory={onDeleteStory}
-      />
-
-      {/* Empty State */}
-      {columns.length === 0 && (
-        <div className="flex flex-col items-center justify-center py-16 text-neutral-400">
-          <div className="w-16 h-16 rounded-full bg-neutral-200 flex items-center justify-center mb-4">
-            <FiGrid className="w-8 h-8" />
+      {/* Kanban Board or Empty State */}
+      {columns.length > 0 ? (
+        <SimpleKanban
+          columns={columns}
+          stories={stories}
+          onStoryMove={onStoryMove}
+          onOpenStoryModal={onOpenStoryModal}
+          onCriterionCheck={onCriterionCheck}
+          onCriterionDelete={onCriterionDelete}
+          onCriteriaReorder={onCriteriaReorder}
+          onDeleteStory={onDeleteStory}
+        />
+      ) : (
+        <div className="grid place-items-center py-24 text-neutral-400 w-full animate-in overflow-hidden">
+          <div className="flex flex-col items-center text-center">
+            <div className="w-20 h-20 rounded-apple-2xl bg-white shadow-apple-sm flex items-center justify-center mb-6 border border-neutral-100 transition-transform hover:scale-105 duration-300">
+              <FiGrid className="w-10 h-10 text-neutral-300" />
+            </div>
+            <h3 className="text-xl font-semibold text-neutral-800 mb-2">
+              El tablero está vacío
+            </h3>
+            <p className="text-neutral-500 max-w-sm text-balance">
+              Crea una columna nueva o importa un archivo JSON para comenzar a organizar tus historias de usuario.
+            </p>
           </div>
-          <p className="text-lg font-medium text-neutral-600 mb-1">
-            El tablero está vacío
-          </p>
-          <p className="text-sm">
-            Crea una columna o importa un archivo JSON para comenzar
-          </p>
         </div>
       )}
     </div>

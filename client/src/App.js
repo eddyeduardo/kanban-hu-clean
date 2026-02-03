@@ -28,7 +28,7 @@ function App() {
   const [targetColumnId, setTargetColumnId] = useState(null);
   const [chartStartDate, setChartStartDate] = useState(new Date());
   const [chartEndDate, setChartEndDate] = useState(new Date());
-  
+
   // Función para actualizar la fecha de inicio del Burn Down Chart
   const handleStartDateChange = async (date) => {
     setChartStartDate(date);
@@ -40,7 +40,7 @@ function App() {
       }
     }
   };
-  
+
   // Función para agregar columnas automáticamente basadas en el atributo usuario de las historias
   const handleAutoAddColumns = async () => {
     try {
@@ -130,18 +130,18 @@ function App() {
   const handleAddColumn = async (columnName) => {
     try {
       setLoading(true);
-      
+
       // Si hay un archivo JSON actual, la columna se asocia a ese proyecto
       const newColumn = {
         name: columnName,
         jsonFileName: currentJsonFile || null
       };
-      
+
       const response = await api.createColumn(newColumn);
-      
+
       // Actualizar la lista de columnas
       setColumns(prevColumns => [...prevColumns, response.data]);
-      
+
       return response.data;
     } catch (error) {
       console.error('Error al crear la columna:', error);
@@ -169,20 +169,20 @@ function App() {
     const fetchData = async () => {
       try {
         setLoading(true);
-        
+
         // Cargar lista de archivos JSON
         const jsonFilesResponse = await api.getJsonFiles();
         setJsonFiles(jsonFilesResponse.data);
-        
+
         // Si no hay archivos, terminar
         if (jsonFilesResponse.data.length === 0) {
           setLoading(false);
           return;
         }
-        
+
         // Verificar si hay un archivo guardado en localStorage
         const savedJsonFile = localStorage.getItem('currentJsonFile');
-        
+
         // Intentar cargar el archivo guardado si existe
         if (savedJsonFile && jsonFilesResponse.data.some(file => file.fileName === savedJsonFile)) {
           try {
@@ -193,13 +193,13 @@ function App() {
             // Continuar con la carga del primer archivo si hay un error
           }
         }
-        
+
         // Si llegamos aquí, cargar el primer archivo disponible
         if (jsonFilesResponse.data.length > 0) {
           const firstJsonFile = jsonFilesResponse.data[0].fileName;
           await handleLoadJsonFile(firstJsonFile);
         }
-        
+
       } catch (err) {
         console.error('Error al cargar datos iniciales:', err);
         setError('Error al cargar los datos: ' + (err.response?.data?.message || err.message));
@@ -209,7 +209,7 @@ function App() {
     };
 
     fetchData();
-    
+
     // Limpiar el archivo guardado al desmontar la aplicación
     return () => {
       localStorage.removeItem('currentJsonFile');
@@ -223,13 +223,13 @@ function App() {
     try {
       setLoading(true);
       const response = await api.importStories(data);
-      
+
       // Obtener el nombre del archivo JSON
       const jsonFileName = data.jsonFileName;
-      
+
       // Guardar el nombre del archivo actual en el estado
       setCurrentJsonFile(jsonFileName);
-      
+
       // Cargar las columnas específicas de este archivo JSON
       const columnsResponse = await api.getColumns(jsonFileName);
       setColumns(columnsResponse.data);
@@ -241,7 +241,7 @@ function App() {
         const storiesResponse = await api.getStoriesByJsonFile(jsonFileName);
         setStories(storiesResponse.data.stories);
       }
-      
+
       // Cargar las preguntas asociadas a este archivo JSON
       try {
         const jsonFileResponse = await api.getJsonFile(jsonFileName);
@@ -256,7 +256,7 @@ function App() {
         console.error('Error al cargar las preguntas:', preguntasError);
         setPreguntas([]);
       }
-      
+
       setLoading(false);
       return response.data.message || `Historias importadas correctamente desde ${jsonFileName}`;
     } catch (err) {
@@ -265,7 +265,7 @@ function App() {
       throw err;
     }
   };
-  
+
   // Función para calcular el primer viernes después de una fecha
   const getNextFriday = (date) => {
     const result = new Date(date);
@@ -287,13 +287,13 @@ function App() {
         console.log('Evento no válido:', event);
         return;
       }
-      
+
       // Obtener el nombre del archivo de manera segura
       const fileName = event?.target?.value;
-      
+
       // Verificar si es una notificación de eliminación
       const isDeletionEvent = event?.target?.dataset?.deleted === 'true';
-      
+
       // Si es una notificación de eliminación, limpiar el estado
       if (isDeletionEvent) {
         console.log('Archivo eliminado, limpiando estado');
@@ -303,18 +303,18 @@ function App() {
         setPreguntas([]);
         return;
       }
-      
+
       // Si no hay nombre de archivo, no hacer nada
       if (!fileName) {
         console.log('No se proporcionó nombre de archivo');
         return;
       }
-      
+
       setLoading(true);
-      
+
       // Cargar las historias y columnas del archivo seleccionado
       const response = await api.getStoriesByJsonFile(fileName);
-      
+
       // Actualizar las columnas con las específicas de este archivo JSON y las columnas por defecto
       if (response.data.columns) {
         setColumns(response.data.columns);
@@ -323,11 +323,11 @@ function App() {
         const columnsResponse = await api.getColumns(fileName);
         setColumns(columnsResponse.data);
       }
-      
+
       // Actualizar las historias con las del archivo seleccionado
       setStories(response.data.stories);
       setCurrentJsonFile(fileName);
-      
+
       // Cargar las preguntas asociadas a este archivo JSON
       try {
         const jsonFileResponse = await api.getJsonFile(fileName);
@@ -342,7 +342,7 @@ function App() {
         console.error('Error al cargar las preguntas del archivo:', preguntasError);
         setPreguntas([]);
       }
-      
+
       // Cargar la configuración del proyecto (fechas para el Burn Down Chart)
       try {
         const configResponse = await api.getProjectConfig(fileName);
@@ -368,7 +368,7 @@ function App() {
           setChartEndDate(getNextFriday(uploadDate));
         }
       }
-      
+
       setLoading(false);
       return `Cargadas ${response.data.stories.length} historias del archivo ${fileName}`;
     } catch (err) {
@@ -381,33 +381,33 @@ function App() {
   const handleStoryMove = async (storyId, targetColumnId, newPosition) => {
     try {
       console.log(`Moving story ${storyId} to column ${targetColumnId} at position ${newPosition}`);
-      
+
       // Find the story to move and target column
       const storyToMove = stories.find(s => s._id === storyId);
       const targetColumn = columns.find(col => col._id === targetColumnId);
-      
+
       if (!storyToMove) {
         console.error('Story not found:', storyId);
         return;
       }
-      
+
       // If the story is already in the target column at the same position, do nothing
       if (storyToMove.column === targetColumnId && storyToMove.position === newPosition) {
         console.log('Story is already in the target position');
         return;
       }
-      
+
       // Get the column name for the user field
       const columnName = targetColumn ? targetColumn.name : 'Sin columna';
-      
+
       // Optimistic update to the UI first
       setStories(prevStories => {
         // Create a new array with the updated story
         return prevStories.map(story => {
           if (story._id === storyId) {
-            const updatedStory = { 
-              ...story, 
-              column: targetColumnId, 
+            const updatedStory = {
+              ...story,
+              column: targetColumnId,
               position: newPosition,
               user: columnName, // Update user with column name
               updatedAt: new Date().toISOString() // Force re-render
@@ -418,48 +418,48 @@ function App() {
           return story;
         });
       });
-      
+
       // Update the story on the server
       const updateData = {
         column: targetColumnId,
         position: newPosition,
         user: columnName // Ensure user is updated on the server
       };
-      
+
       console.log('Sending update to server:', { storyId, updateData });
-      
+
       const response = await api.updateStory(storyId, updateData);
       console.log('Server response:', response.data);
-      
+
       // If the server returns different data, update the UI to match
       if (response.data) {
-        setStories(prevStories => 
-          prevStories.map(story => 
-            story._id === response.data._id 
-              ? { 
-                  ...story, 
-                  ...response.data,
-                  // Ensure user is preserved from our optimistic update
-                  // in case server doesn't return it
-                  user: response.data.user || story.user 
-                }
+        setStories(prevStories =>
+          prevStories.map(story =>
+            story._id === response.data._id
+              ? {
+                ...story,
+                ...response.data,
+                // Ensure user is preserved from our optimistic update
+                // in case server doesn't return it
+                user: response.data.user || story.user
+              }
               : story
           )
         );
       }
     } catch (err) {
       console.error('Error moving story:', err);
-      
+
       // Revert the optimistic update in case of error
       setStories(prevStories => {
         const originalStory = stories.find(s => s._id === storyId);
         if (!originalStory) return prevStories;
-        
-        return prevStories.map(story => 
+
+        return prevStories.map(story =>
           story._id === storyId ? originalStory : story
         );
       });
-      
+
       setError('Error moving story: ' + (err.response?.data?.message || err.message));
     }
   };
@@ -474,14 +474,14 @@ function App() {
   const handleDeleteJsonFile = async (fileName) => {
     try {
       setLoading(true);
-      
+
       // Llamar a la API para eliminar el archivo
       await api.deleteJsonFile(fileName);
-      
+
       // Actualizar la lista de archivos disponibles
       const jsonFilesResponse = await api.getJsonFiles();
       setJsonFiles(jsonFilesResponse.data);
-      
+
       // Si el archivo eliminado es el que está actualmente cargado, limpiar el estado
       if (currentJsonFile === fileName) {
         setCurrentJsonFile(null);
@@ -489,18 +489,18 @@ function App() {
         setStories([]);
         setPreguntas([]);
       }
-      
+
       setLoading(false);
-      return { 
-        success: true, 
-        message: `Archivo "${fileName}" eliminado correctamente` 
+      return {
+        success: true,
+        message: `Archivo "${fileName}" eliminado correctamente`
       };
     } catch (err) {
       console.error('Error al eliminar el archivo:', err);
       setLoading(false);
-      return { 
-        success: false, 
-        message: 'Error al eliminar el archivo: ' + (err.response?.data?.message || err.message) 
+      return {
+        success: false,
+        message: 'Error al eliminar el archivo: ' + (err.response?.data?.message || err.message)
       };
     }
   };
@@ -509,13 +509,13 @@ function App() {
   const handleDeleteStory = async (storyId) => {
     try {
       console.log(`Eliminando historia con ID: ${storyId}`);
-      
+
       // Llamar a la API para eliminar la historia
       await api.deleteStory(storyId);
-      
+
       // Actualizar el estado local eliminando la historia
       setStories(stories.filter(story => story._id !== storyId));
-      
+
       console.log(`Historia ${storyId} eliminada correctamente`);
       return true;
     } catch (err) {
@@ -532,7 +532,7 @@ function App() {
       console.log('Datos de la historia recibidos:', JSON.stringify(storyData, null, 2));
       console.log('Historia actual:', JSON.stringify(currentStory, null, 2));
       console.log('Archivo JSON actual:', currentJsonFile);
-      
+
       // Procesar los criterios
       if (storyData.criteria && storyData.criteria.length > 0) {
         if (currentStory && currentStory.criteria) {
@@ -542,7 +542,7 @@ function App() {
             const existingCriterion = currentStory.criteria.find(
               c => c.text === newCriterion.text
             );
-            
+
             if (existingCriterion) {
               // Mantener el criterio existente con su _id y estado actual
               return {
@@ -560,7 +560,7 @@ function App() {
               };
             }
           });
-          
+
           storyData.criteria = updatedCriteria;
         } else {
           // Para historias nuevas, marcar todos los criterios como creados manualmente
@@ -571,14 +571,14 @@ function App() {
           }));
         }
       }
-      
+
       if (currentStory) {
         // Update existing story - Asegurarse de incluir id_historia
         const updateData = { ...storyData };
-        
+
         console.log('=== ACTUALIZANDO HISTORIA EXISTENTE ===');
         console.log('Datos antes de actualizar:', JSON.stringify(updateData, null, 2));
-        
+
         // Asegurarse de que los campos importantes no se pierdan
         if (!updateData.id_historia && currentStory.id_historia) {
           updateData.id_historia = currentStory.id_historia;
@@ -602,52 +602,52 @@ function App() {
           updateData.jsonFileName = currentStory.jsonFileName;
           console.log('Manteniendo jsonFileName existente:', updateData.jsonFileName);
         }
-        
+
         console.log('Datos que se enviarán al servidor:', JSON.stringify(updateData, null, 2));
-        
+
         const response = await api.updateStory(currentStory._id, updateData);
         console.log('Respuesta del servidor:', JSON.stringify(response.data, null, 2));
-        
+
         setStories(stories.map(s => s._id === currentStory._id ? response.data : s));
       } else {
         console.log('=== CREANDO NUEVA HISTORIA ===');
         console.log('Datos de la historia recibidos:', JSON.stringify(storyData, null, 2));
-        
+
         // Obtener el nombre de la columna de destino
         const targetColumn = columns.find(col => col._id === targetColumnId);
         const columnName = targetColumn ? targetColumn.name : 'Sin columna';
         console.log('Columna de destino:', columnName);
-        
+
         // Usar el ID de historia proporcionado o generar uno nuevo
-        const storyId = storyData.id_historia || 
+        const storyId = storyData.id_historia ||
           `HU-${currentJsonFile ? currentJsonFile.substring(0, 5).toUpperCase() : 'CLI01'}-${String(stories.length + 1).padStart(3, '0')}`;
-        
+
         console.log('ID de historia generado:', storyId);
-        
+
         // Crear objeto con los datos de la historia
         const newStoryData = {
           ...storyData,
           column: targetColumnId,
           user: columnName,  // Guardar el nombre de la columna como usuario
         };
-        
+
         // Solo agregar id_historia si no está vacío
         if (storyId) {
           newStoryData.id_historia = storyId;
           console.log('ID de historia asignado:', newStoryData.id_historia);
         }
-        
+
         // Solo agregar jsonFileName si existe
         if (currentJsonFile) {
           newStoryData.jsonFileName = currentJsonFile;
           console.log('Archivo JSON asignado:', newStoryData.jsonFileName);
         }
-        
+
         console.log('Datos completos que se enviarán al servidor:', JSON.stringify(newStoryData, null, 2));
-        
+
         const response = await api.createStory(newStoryData);
         console.log('Respuesta del servidor:', JSON.stringify(response.data, null, 2));
-        
+
         // Verificar que los campos se guardaron correctamente
         if (!response.data.id_historia) {
           console.error('ERROR: El servidor no devolvió el id_historia');
@@ -658,7 +658,7 @@ function App() {
         if (!response.data.jsonFileName) {
           console.error('ERROR: El servidor no devolvió el jsonFileName');
         }
-        
+
         setStories([...stories, response.data]);
       }
       setModalOpen(false);
@@ -673,10 +673,10 @@ function App() {
     try {
       const story = stories.find(s => s._id === storyId);
       if (!story) return;
-      
+
       // Actualizar la historia con los criterios reordenados
       await api.updateStory(storyId, { criteria: newCriteria });
-      
+
       // Actualizar el estado local
       setStories(stories.map(s => {
         if (s._id === storyId) {
@@ -698,10 +698,10 @@ function App() {
       // Crear una copia de los criterios sin el que se va a eliminar
       const updatedCriteria = [...story.criteria];
       updatedCriteria.splice(criterionIndex, 1);
-      
+
       // Actualizar la historia en el servidor
       await api.updateStory(storyId, { criteria: updatedCriteria });
-      
+
       // Actualizar el estado local
       setStories(stories.map(s => {
         if (s._id === storyId) {
@@ -723,31 +723,31 @@ function App() {
       // Actualizar el criterio seleccionado
       const updatedCriteria = [...story.criteria];
       updatedCriteria[criterionIndex].checked = checked;
-      
+
       // Actualizar la fecha de completado del criterio
       if (checked) {
         updatedCriteria[criterionIndex].completedAt = new Date();
       } else {
         updatedCriteria[criterionIndex].completedAt = null;
       }
-      
+
       // Ordenar los criterios: primero los no completados, luego los completados
       const sortedCriteria = [...updatedCriteria].sort((a, b) => {
         if (a.checked === b.checked) return 0;
         return a.checked ? 1 : -1; // Los no marcados primero
       });
-      
+
       // Verificar si todos los criterios están completados
       const allCriteriaCompleted = sortedCriteria.every(criterion => criterion.checked);
-      
+
       // Datos a actualizar en la historia
       const updateData = { criteria: sortedCriteria };
-      
+
       // Si todos los criterios están completados y la historia no tiene fecha de finalización,
       // establecer la fecha de finalización
       if (allCriteriaCompleted && !story.completedAt && sortedCriteria.length > 0) {
         updateData.completedAt = new Date();
-      } 
+      }
       // Si algún criterio no está completado, eliminar la fecha de finalización
       else if (!allCriteriaCompleted && story.completedAt) {
         updateData.completedAt = null;
@@ -759,8 +759,8 @@ function App() {
       // Actualizar el estado local
       setStories(stories.map(s => {
         if (s._id === storyId) {
-          return { 
-            ...s, 
+          return {
+            ...s,
             criteria: sortedCriteria,
             completedAt: updateData.completedAt !== undefined ? updateData.completedAt : s.completedAt
           };
@@ -835,71 +835,73 @@ function App() {
         />
 
         {/* Main content */}
-        <main className="flex-1 overflow-y-auto px-4 md:px-8 py-4">
-          {loading ? (
-            <div className="flex items-center justify-center h-64">
-              <div className="text-center">
-                <div className="w-8 h-8 border-2 border-primary-500 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
-                <p className="text-neutral-500 text-sm">Cargando...</p>
+        <main className="flex-1 min-w-0 overflow-auto p-4 md:p-6">
+          <div className="w-full max-w-full">
+            {loading ? (
+              <div className="flex items-center justify-center h-64">
+                <div className="text-center">
+                  <div className="w-8 h-8 border-2 border-primary-500 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
+                  <p className="text-neutral-500 text-sm">Cargando...</p>
+                </div>
               </div>
-            </div>
-          ) : (
-            <TabSystem
-              activeTab={activeTab}
-              onTabChange={setActiveTab}
-              tabs={{
-                'Kanban': (
-                  <KanbanTab
-                    columns={columns}
-                    stories={stories}
-                    onAddColumn={handleAddColumn}
-                    onAutoAddColumns={handleAutoAddColumns}
-                    onStoryMove={handleStoryMove}
-                    onOpenStoryModal={openStoryModal}
-                    onCriterionCheck={handleCriterionCheck}
-                    onCriterionDelete={handleCriterionDelete}
-                    onCriteriaReorder={handleCriteriaReorder}
-                    onDeleteStory={handleDeleteStory}
-                    currentJsonFile={currentJsonFile}
-                  />
-                ),
-                'Dashboard': (
-                  <Dashboard
-                    stories={stories}
-                    columns={columns}
-                    currentJsonFile={currentJsonFile}
-                    startDate={chartStartDate}
-                    endDate={chartEndDate}
-                  />
-                ),
-                'Alcance': (
-                  <ScopeView
-                    columns={columns}
-                    stories={stories}
-                  />
-                ),
-                'Plan de pruebas': (
-                  <TestPlanView
-                    columns={columns}
-                    stories={stories}
-                  />
-                ),
-                'Transcripción': (
-                  <VideoTranscription />
-                ),
-                'Preguntas': (
-                  <PreguntasTab
-                    preguntas={preguntas}
-                    currentJsonFile={currentJsonFile}
-                    columns={columns}
-                    stories={stories}
-                    onCreateStory={handleCreateStoryFromPregunta}
-                    onUpdateStory={handleUpdateStoryFromPregunta}
-                  />
-                )
-              }}
-            />
-          )}
+            ) : (
+              <TabSystem
+                activeTab={activeTab}
+                onTabChange={setActiveTab}
+                tabs={{
+                  'Kanban': (
+                    <KanbanTab
+                      columns={columns}
+                      stories={stories}
+                      onAddColumn={handleAddColumn}
+                      onAutoAddColumns={handleAutoAddColumns}
+                      onStoryMove={handleStoryMove}
+                      onOpenStoryModal={openStoryModal}
+                      onCriterionCheck={handleCriterionCheck}
+                      onCriterionDelete={handleCriterionDelete}
+                      onCriteriaReorder={handleCriteriaReorder}
+                      onDeleteStory={handleDeleteStory}
+                      currentJsonFile={currentJsonFile}
+                    />
+                  ),
+                  'Dashboard': (
+                    <Dashboard
+                      stories={stories}
+                      columns={columns}
+                      currentJsonFile={currentJsonFile}
+                      startDate={chartStartDate}
+                      endDate={chartEndDate}
+                    />
+                  ),
+                  'Alcance': (
+                    <ScopeView
+                      columns={columns}
+                      stories={stories}
+                    />
+                  ),
+                  'Plan de pruebas': (
+                    <TestPlanView
+                      columns={columns}
+                      stories={stories}
+                    />
+                  ),
+                  'Transcripción': (
+                    <VideoTranscription />
+                  ),
+                  'Preguntas': (
+                    <PreguntasTab
+                      preguntas={preguntas}
+                      currentJsonFile={currentJsonFile}
+                      columns={columns}
+                      stories={stories}
+                      onCreateStory={handleCreateStoryFromPregunta}
+                      onUpdateStory={handleUpdateStoryFromPregunta}
+                    />
+                  )
+                }}
+              />
+            )}
+          </div>
         </main>
       </div>
 

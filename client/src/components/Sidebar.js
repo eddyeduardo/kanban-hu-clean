@@ -23,14 +23,14 @@ const Sidebar = ({
   return (
     <aside
       className={`
-        sidebar relative flex-shrink-0
+        sidebar relative
         bg-white border-r border-neutral-200
         shadow-apple-sm
         transition-all duration-300 ease-apple
-        flex flex-col
+        flex flex-col flex-shrink-0
+        overflow-y-auto overflow-x-hidden
         ${isCollapsed ? 'w-14' : 'w-[280px]'}
       `}
-      style={{ minHeight: 'calc(100vh - 120px)' }}
     >
       {/* Toggle button */}
       <button

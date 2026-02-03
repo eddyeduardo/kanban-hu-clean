@@ -8,14 +8,14 @@ const TabSystem = ({ activeTab, onTabChange, tabs }) => {
   const tabNames = Object.keys(tabs);
 
   return (
-    <div className="mb-6">
+    <div className="w-full max-w-full">
       {/* Tab Navigation */}
-      <div className="flex gap-1 p-1 bg-neutral-100 rounded-apple-lg w-fit">
+      <div className="flex gap-1 p-1 bg-neutral-100 rounded-apple-lg w-fit mb-6 overflow-x-auto">
         {tabNames.map(tabName => (
           <button
             key={tabName}
             className={`
-              relative px-4 py-2 text-sm font-medium rounded-apple
+              relative px-4 py-2 text-sm font-medium rounded-apple whitespace-nowrap
               transition-all duration-200 ease-apple
               focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50
               ${activeTab === tabName
@@ -31,7 +31,7 @@ const TabSystem = ({ activeTab, onTabChange, tabs }) => {
       </div>
 
       {/* Tab Content */}
-      <div className="mt-6 animate-fade-in">
+      <div className="w-full max-w-full animate-fade-in">
         {tabs[activeTab]}
       </div>
     </div>

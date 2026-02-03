@@ -418,7 +418,7 @@ const ScopeView = ({ columns: propColumns = [], stories: propStories = [] }) => 
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 w-full max-w-full box-border">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h2 className="text-xl font-semibold text-neutral-900">Alcance del Proyecto</h2>
@@ -486,7 +486,7 @@ const ScopeView = ({ columns: propColumns = [], stories: propStories = [] }) => 
       )}
 
       {/* KPI Cards - Estilo Apple */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         <div className="card p-5">
           <div className="flex items-center justify-between mb-3">
             <div className="w-9 h-9 rounded-apple bg-primary-50 flex items-center justify-center">
@@ -523,8 +523,8 @@ const ScopeView = ({ columns: propColumns = [], stories: propStories = [] }) => 
       </div>
 
       {/* Tabla de historias - Estilo Apple */}
-      <div className="card overflow-hidden">
-        <div className="overflow-x-auto">
+      <div className="card w-full max-w-full overflow-hidden">
+        <div className="w-full overflow-x-auto">
           <table className="min-w-full divide-y divide-neutral-200">
             <thead className="bg-neutral-50">
               <tr>

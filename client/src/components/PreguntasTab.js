@@ -263,14 +263,14 @@ const PreguntasTab = ({ preguntas = [], currentJsonFile, onCreateStory, onUpdate
   }
 
   return (
-    <div>
+    <div className="w-full max-w-full box-border">
       {error && (
         <div className="mb-4 p-3 bg-danger-50 text-danger-700 rounded-apple text-sm border border-danger-100 animate-fade-in">
           {error}
         </div>
       )}
 
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex flex-wrap justify-between items-center mb-6 gap-2">
         <h2 className="text-xl font-semibold text-neutral-900">Preguntas para Aclarar</h2>
         <div className="flex items-center gap-3">
           {currentJsonFile && (
