@@ -12,6 +12,7 @@ import VideoTranscription from './components/VideoTranscription';
 import ScopeView from './components/ScopeView';
 import TestPlanView from './components/TestPlanView';
 import PreguntasTab from './components/PreguntasTab';
+import InsightsTab from './components/InsightsTab';
 import api from './services/api';
 
 function App() {
@@ -525,6 +526,37 @@ function App() {
     }
   };
 
+  // Handler para eliminar una columna vacía
+  const handleDeleteColumn = async (columnId) => {
+    try {
+      // Verificar que la columna esté vacía
+      const storiesInColumn = stories.filter(story => {
+        if (typeof story.column === 'string') {
+          return story.column === columnId;
+        }
+        return story.column?._id === columnId;
+      });
+
+      if (storiesInColumn.length > 0) {
+        setError('No se puede eliminar una columna que tiene historias. Mueve las historias primero.');
+        return false;
+      }
+
+      // Llamar a la API para eliminar la columna
+      await api.deleteColumn(columnId);
+
+      // Actualizar el estado local eliminando la columna
+      setColumns(columns.filter(col => col._id !== columnId));
+
+      console.log(`Columna ${columnId} eliminada correctamente`);
+      return true;
+    } catch (err) {
+      console.error('Error al eliminar la columna:', err);
+      setError('Error al eliminar la columna: ' + (err.response?.data?.message || err.message));
+      return false;
+    }
+  };
+
   // Handler for saving a story
   const handleSaveStory = async (storyData) => {
     try {
@@ -798,6 +830,31 @@ function App() {
     }
   };
 
+  // Handler para eliminar una pregunta
+  const handleDeletePregunta = async (index) => {
+    if (!currentJsonFile) {
+      setError('No hay archivo JSON seleccionado');
+      return;
+    }
+
+    try {
+      // Crear nuevo array sin la pregunta eliminada
+      const nuevasPreguntas = preguntas.filter((_, i) => i !== index);
+
+      // Actualizar en el servidor
+      await api.updatePreguntas(currentJsonFile, nuevasPreguntas);
+
+      // Actualizar estado local
+      setPreguntas(nuevasPreguntas);
+
+      return { success: true };
+    } catch (err) {
+      console.error('Error al eliminar pregunta:', err);
+      setError('Error al eliminar la pregunta: ' + (err.response?.data?.message || err.message));
+      throw err;
+    }
+  };
+
   return (
     <div className="bg-neutral-100 text-neutral-900 min-h-screen flex flex-col">
       {/* Header - full width */}
@@ -861,6 +918,7 @@ function App() {
                       onCriterionDelete={handleCriterionDelete}
                       onCriteriaReorder={handleCriteriaReorder}
                       onDeleteStory={handleDeleteStory}
+                      onDeleteColumn={handleDeleteColumn}
                       currentJsonFile={currentJsonFile}
                     />
                   ),
@@ -896,6 +954,13 @@ function App() {
                       stories={stories}
                       onCreateStory={handleCreateStoryFromPregunta}
                       onUpdateStory={handleUpdateStoryFromPregunta}
+                      onDeletePregunta={handleDeletePregunta}
+                    />
+                  ),
+                  'Insights': (
+                    <InsightsTab
+                      stories={stories}
+                      columns={columns}
                     />
                   )
                 }}

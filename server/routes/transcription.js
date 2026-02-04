@@ -226,7 +226,7 @@ function limpiarTemporales() {
 }
 
 // Ejecutar limpieza al iniciar y cada 24 horas
-limpiarTemporales();
+// limpiarTemporales();
 setInterval(limpiarTemporales, 24 * 60 * 60 * 1000);
 
 // Limpiar archivos temporales más viejos de 24 horas
@@ -339,7 +339,7 @@ const setupCleanupSchedule = () => {
 };
 
 // Iniciar el programa de limpieza
-setupCleanupSchedule();
+// setupCleanupSchedule();
 
 // Almacenar el estado de las transcripciones en memoria
 const transcriptionStatus = new Map();

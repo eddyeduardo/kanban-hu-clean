@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const mongoose = require('mongoose');
 const Column = require('../models/Column');
 const Story = require('../models/Story');
 
@@ -257,13 +258,20 @@ router.delete('/:id', async (req, res) => {
   try {
     const column = await Column.findById(req.params.id);
     if (!column) return res.status(404).json({ message: 'Column not found' });
-    
-    // Delete all stories in this column
-    await Story.deleteMany({ column: req.params.id });
-    
-    await column.remove();
-    res.json({ message: 'Column deleted' });
+
+    // Verificar si la columna tiene historias
+    const storiesCount = await Story.countDocuments({ column: req.params.id });
+    if (storiesCount > 0) {
+      return res.status(400).json({
+        message: 'No se puede eliminar una columna que tiene historias. Mueve las historias primero.'
+      });
+    }
+
+    // Eliminar la columna usando deleteOne() en lugar de remove() (deprecado)
+    await Column.deleteOne({ _id: req.params.id });
+    res.json({ message: 'Columna eliminada correctamente' });
   } catch (error) {
+    console.error('Error al eliminar columna:', error);
     res.status(500).json({ message: error.message });
   }
 });

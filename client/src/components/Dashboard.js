@@ -38,24 +38,25 @@ const Dashboard = ({ stories, columns, currentJsonFile, startDate, endDate }) =>
 
   // Métricas por tipo de tarea (esfuerzo en horas): planificado vs realizado
   const tipoMetrics = useMemo(() => {
-    const TIPOS_ORDEN = ['Operativa', 'Soporte', 'Comercial', 'Administrativa'];
+    const TIPOS_ORDEN = ['Operativa', 'Soporte', 'Comercial', 'Administrativa', 'Sin tipo'];
     const TIPO_CONFIG = {
       'Operativa': { color: '#0a84ff', colorLight: '#0a84ff22', text: 'text-blue-700' },
       'Soporte': { color: '#ff9f0a', colorLight: '#ff9f0a22', text: 'text-amber-700' },
       'Comercial': { color: '#30d158', colorLight: '#30d15822', text: 'text-emerald-700' },
       'Administrativa': { color: '#bf5af2', colorLight: '#bf5af222', text: 'text-violet-700' },
+      'Sin tipo': { color: '#8e8e93', colorLight: '#8e8e9322', text: 'text-neutral-600' },
     };
 
     // Normalizar tipos para manejar variaciones de género (masculino/femenino)
     const normalizeTipo = (tipo) => {
-      if (!tipo) return '';
+      if (!tipo || tipo.trim() === '') return 'Sin tipo';
       const tipoLower = tipo.toLowerCase().trim();
       // Mapear variaciones al tipo canónico
       if (tipoLower === 'operativa' || tipoLower === 'operativo') return 'Operativa';
       if (tipoLower === 'administrativa' || tipoLower === 'administrativo') return 'Administrativa';
       if (tipoLower === 'soporte') return 'Soporte';
       if (tipoLower === 'comercial') return 'Comercial';
-      return tipo; // Devolver original si no coincide
+      return 'Sin tipo'; // Historias con tipo no reconocido van a "Sin tipo"
     };
 
     const parseEsfuerzo = (val) => {
@@ -89,11 +90,10 @@ const Dashboard = ({ stories, columns, currentJsonFile, startDate, endDate }) =>
       porcentaje: totalPlanificado > 0 ? Math.round((tipoMap[tipo].planificado / totalPlanificado) * 100) : 0,
       progreso: tipoMap[tipo].planificado > 0 ? Math.round((tipoMap[tipo].realizado / tipoMap[tipo].planificado) * 100) : 0,
       config: TIPO_CONFIG[tipo],
-    }));
+    })).filter(i => i.planificado > 0); // Solo mostrar tipos con horas
 
-    // Datos para el donut chart (solo tipos con horas > 0, o un placeholder)
+    // Datos para el donut chart (solo tipos con horas > 0)
     const donutData = items
-      .filter(i => i.planificado > 0)
       .map(i => ({ name: i.tipo, value: i.planificado, color: i.config.color }));
 
     return { items, donutData, totalPlanificado, totalRealizado };
@@ -136,17 +136,17 @@ const Dashboard = ({ stories, columns, currentJsonFile, startDate, endDate }) =>
 
   // Métricas de esfuerzo por persona y tipo de tarea
   const userEffortMetrics = useMemo(() => {
-    const TIPOS_ORDEN = ['Operativa', 'Soporte', 'Comercial', 'Administrativa'];
+    const TIPOS_ORDEN = ['Operativa', 'Soporte', 'Comercial', 'Administrativa', 'Sin tipo'];
     const users = [...new Set(stories.map(s => s.user || 'Sin asignar'))].sort();
 
     const normalizeTipo = (tipo) => {
-      if (!tipo) return '';
+      if (!tipo || tipo.trim() === '') return 'Sin tipo';
       const tipoLower = tipo.toLowerCase().trim();
       if (tipoLower === 'operativa' || tipoLower === 'operativo') return 'Operativa';
       if (tipoLower === 'administrativa' || tipoLower === 'administrativo') return 'Administrativa';
       if (tipoLower === 'soporte') return 'Soporte';
       if (tipoLower === 'comercial') return 'Comercial';
-      return tipo;
+      return 'Sin tipo';
     };
 
     const parseEsfuerzo = (val) => {
@@ -504,6 +504,7 @@ const Dashboard = ({ stories, columns, currentJsonFile, startDate, endDate }) =>
                       'Soporte': { color: '#ff9f0a' },
                       'Comercial': { color: '#30d158' },
                       'Administrativa': { color: '#bf5af2' },
+                      'Sin tipo': { color: '#8e8e93' },
                     };
                     const config = TIPO_CONFIG[m.tipo] || { color: '#8e8e93' };
                     const progreso = m.planificado > 0 ? Math.round((m.realizado / m.planificado) * 100) : 0;

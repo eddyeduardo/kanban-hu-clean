@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { FiPlus } from 'react-icons/fi';
+import { FiPlus, FiTrash2 } from 'react-icons/fi';
 import StoryCard from './StoryCard';
 import { sortStoriesWithCompletedLast } from '../utils/storyUtils';
 
@@ -18,8 +18,20 @@ const KanbanColumn = ({
   onDragOver,
   onDragStart,
   onDragEnd,
-  onDelete
+  onDelete,
+  onDeleteColumn
 }) => {
+  // Manejar eliminación de columna con confirmación
+  const handleDeleteColumn = () => {
+    if (stories.length > 0) {
+      alert('No se puede eliminar una columna que tiene historias. Mueve las historias primero.');
+      return;
+    }
+
+    if (window.confirm(`¿Estás seguro de que deseas eliminar la columna "${column.name}"?`)) {
+      onDeleteColumn(column._id);
+    }
+  };
   const handleDragOver = (e) => {
     e.preventDefault();
     e.stopPropagation();
@@ -59,7 +71,7 @@ const KanbanColumn = ({
               {column.name}
             </h2>
           </div>
-          <div className="flex items-center gap-2 ml-2">
+          <div className="flex items-center gap-1 ml-2">
             {totalCount > 0 && (
               <span className="badge-primary text-xs">
                 {completedCount}/{totalCount}
@@ -72,6 +84,15 @@ const KanbanColumn = ({
             >
               <FiPlus className="w-4 h-4" />
             </button>
+            {totalCount === 0 && onDeleteColumn && (
+              <button
+                className="btn-icon w-8 h-8 text-neutral-400 hover:text-danger-500 hover:bg-danger-50"
+                title="Eliminar columna"
+                onClick={handleDeleteColumn}
+              >
+                <FiTrash2 className="w-4 h-4" />
+              </button>
+            )}
           </div>
         </div>
 

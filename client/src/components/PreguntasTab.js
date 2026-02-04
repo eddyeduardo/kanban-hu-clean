@@ -2,13 +2,13 @@ import React, { useState, useEffect, useCallback } from 'react';
 import api from '../services/api';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { FiDownload, FiCheck, FiPlus } from 'react-icons/fi';
+import { FiDownload, FiCheck, FiPlus, FiTrash2 } from 'react-icons/fi';
 
 /**
  * Componente para mostrar preguntas y permitir respuestas.
  * Al guardar una respuesta, crea una historia de usuario en la columna "Por hacer".
  */
-const PreguntasTab = ({ preguntas = [], currentJsonFile, onCreateStory, onUpdateStory, columns = [], stories = [] }) => {
+const PreguntasTab = ({ preguntas = [], currentJsonFile, onCreateStory, onUpdateStory, onDeletePregunta, columns = [], stories = [] }) => {
   console.log('PreguntasTab - Props recibidas:', { preguntas, currentJsonFile });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -58,6 +58,21 @@ const PreguntasTab = ({ preguntas = [], currentJsonFile, onCreateStory, onUpdate
       ...prev,
       [index]: valor
     }));
+  };
+
+  // Manejar eliminación de pregunta con confirmación
+  const handleEliminarPregunta = async (index) => {
+    const pregunta = preguntas[index];
+    const confirmMessage = `¿Estás seguro de que deseas eliminar esta pregunta?\n\n"${pregunta.substring(0, 100)}${pregunta.length > 100 ? '...' : ''}"`;
+
+    if (window.confirm(confirmMessage)) {
+      try {
+        await onDeletePregunta(index);
+        setError('');
+      } catch (err) {
+        // El error ya se maneja en App.js
+      }
+    }
   };
 
   // Guardar respuesta: si ya existe una historia con ese título, agrega los criterios; si no, crea una nueva
@@ -311,11 +326,23 @@ const PreguntasTab = ({ preguntas = [], currentJsonFile, onCreateStory, onUpdate
 
             return (
               <div key={index} className={`card p-4 ${savedData ? 'border-l-[3px] border-l-success-500' : ''}`}>
-                <div className="flex items-start gap-3 mb-3">
-                  <span className="badge-primary text-xs flex-shrink-0 mt-0.5">
-                    {index + 1}
-                  </span>
-                  <p className="text-sm font-medium text-neutral-800">{pregunta}</p>
+                <div className="flex items-start justify-between gap-3 mb-3">
+                  <div className="flex items-start gap-3 flex-1">
+                    <span className="badge-primary text-xs flex-shrink-0 mt-0.5">
+                      {index + 1}
+                    </span>
+                    <p className="text-sm font-medium text-neutral-800">{pregunta}</p>
+                  </div>
+                  {onDeletePregunta && (
+                    <button
+                      type="button"
+                      onClick={() => handleEliminarPregunta(index)}
+                      className="p-1.5 text-neutral-400 hover:text-danger-500 hover:bg-danger-50 rounded-apple transition-colors flex-shrink-0"
+                      title="Eliminar pregunta"
+                    >
+                      <FiTrash2 className="w-4 h-4" />
+                    </button>
+                  )}
                 </div>
 
                 {/* Previous save confirmation */}

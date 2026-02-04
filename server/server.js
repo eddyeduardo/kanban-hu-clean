@@ -7,6 +7,7 @@ const storiesRoutes = require('./routes/stories');
 const jsonFilesRoutes = require('./routes/jsonFiles');
 const projectConfigRoutes = require('./routes/projectConfig');
 const transcriptionRoutes = require('./routes/transcription');
+const insightsRoutes = require('./routes/insights');
 const path = require('path');
 const fs = require('fs');
 
@@ -170,6 +171,7 @@ app.use('/api/stories', storiesRoutes);
 app.use('/api/json-files', jsonFilesRoutes);
 app.use('/api/project-config', projectConfigRoutes);
 app.use('/api/transcription', transcriptionRoutes);
+app.use('/api/insights', insightsRoutes);
 
 // Root route
 app.get('/', (req, res) => {

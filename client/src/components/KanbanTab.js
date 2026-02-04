@@ -18,6 +18,7 @@ const KanbanTab = ({
   onCriterionDelete,
   onCriteriaReorder,
   onDeleteStory,
+  onDeleteColumn,
   currentJsonFile
 }) => {
   return (
@@ -58,6 +59,7 @@ const KanbanTab = ({
           onCriterionDelete={onCriterionDelete}
           onCriteriaReorder={onCriteriaReorder}
           onDeleteStory={onDeleteStory}
+          onDeleteColumn={onDeleteColumn}
         />
       ) : (
         <div className="grid place-items-center py-24 text-neutral-400 w-full animate-in overflow-hidden">

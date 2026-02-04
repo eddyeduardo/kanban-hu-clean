@@ -94,17 +94,18 @@ const apiService = {
   getJsonFile: (fileName) => api.get(`/json-files/${encodeURIComponent(fileName)}`),
   getStoriesByJsonFile: (fileName) => api.get(`/json-files/${encodeURIComponent(fileName)}/stories`),
   deleteJsonFile: (fileName) => api.delete(`/json-files/${encodeURIComponent(fileName)}`),
+  updatePreguntas: (fileName, preguntas) => api.patch(`/json-files/${encodeURIComponent(fileName)}/preguntas`, { preguntas_para_aclarar: preguntas }),
 
   // Project Configuration operations
   getProjectConfig: (jsonFileName) => api.get(`/project-config/${encodeURIComponent(jsonFileName)}`),
   updateProjectConfig: (jsonFileName, data) => api.put(`/project-config/${encodeURIComponent(jsonFileName)}`, data),
-  updateProjectConfig: (jsonFileName, data) => api.put(`/project-config/${encodeURIComponent(jsonFileName)}`, data),
+
+  // Insights operations (timeout más alto por llamada a IA)
+  getInsights: (data) => api.post('/insights', data, { timeout: 60000 }),
 
   // Preguntas operations (deshabilitadas temporalmente)
   getPreguntas: () => Promise.resolve([]),
   createPregunta: () => Promise.resolve({}),
-  updatePregunta: () => Promise.resolve({}),
-  deletePregunta: () => Promise.resolve({}),
 
   /**
    * Uploads a video file for transcription.

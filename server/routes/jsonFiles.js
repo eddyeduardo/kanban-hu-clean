@@ -63,6 +63,48 @@ router.get('/:fileName/stories', async (req, res) => {
   }
 });
 
+// Actualizar preguntas de un archivo JSON (eliminar una pregunta específica)
+router.patch('/:fileName/preguntas', async (req, res) => {
+  try {
+    const { fileName } = req.params;
+    const { preguntas_para_aclarar } = req.body;
+
+    if (!Array.isArray(preguntas_para_aclarar)) {
+      return res.status(400).json({
+        success: false,
+        message: 'preguntas_para_aclarar debe ser un array'
+      });
+    }
+
+    const jsonFile = await JsonFile.findOneAndUpdate(
+      { fileName },
+      { preguntas_para_aclarar },
+      { new: true }
+    );
+
+    if (!jsonFile) {
+      return res.status(404).json({
+        success: false,
+        message: 'Archivo no encontrado'
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Preguntas actualizadas correctamente',
+      preguntas_para_aclarar: jsonFile.preguntas_para_aclarar
+    });
+
+  } catch (error) {
+    console.error('Error al actualizar preguntas:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al actualizar las preguntas',
+      error: error.message
+    });
+  }
+});
+
 // Eliminar un archivo JSON y todas sus historias asociadas
 router.delete('/:fileName', async (req, res) => {
   try {

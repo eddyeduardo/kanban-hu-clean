@@ -81,16 +81,17 @@ const DraggableColumn = ({ column, children, index, moveColumn }) => {
  * @param {Function} props.onCriterionDelete - Función para manejar la eliminación de un criterio
  * @param {Function} props.onCriteriaReorder - Función para manejar el reordenamiento de criterios
  */
-const SimpleKanban = ({ 
-  columns: propColumns, 
-  stories, 
-  onStoryMove, 
-  onOpenStoryModal, 
-  onCriterionCheck, 
-  onCriterionDelete, 
+const SimpleKanban = ({
+  columns: propColumns,
+  stories,
+  onStoryMove,
+  onOpenStoryModal,
+  onCriterionCheck,
+  onCriterionDelete,
   onCriteriaReorder,
   onColumnMove,
-  onDeleteStory
+  onDeleteStory,
+  onDeleteColumn
 }) => {
   const [columns, setColumns] = useState(propColumns);
   
@@ -374,6 +375,7 @@ const SimpleKanban = ({
                 onDragStart={handleDragStart}
                 onDragEnd={handleDragEnd}
                 onDelete={handleDeleteStory}
+                onDeleteColumn={onDeleteColumn}
               />
             </div>
           </DraggableColumn>
