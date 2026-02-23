@@ -4,3 +4,6 @@ node_modules
 server/uploads/
 *.mp3
 *.mp4
+
+# Claude Code (configuración local)
+.claude/
