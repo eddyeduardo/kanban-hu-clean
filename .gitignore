@@ -7,3 +7,8 @@ server/uploads/
 
 # Claude Code (configuración local)
 .claude/
+
+# Variables de entorno (contienen secrets)
+.env
+server/.env
+client/.env
