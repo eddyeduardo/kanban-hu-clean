@@ -1,0 +1,1168 @@
+{
+  "historias_de_usuario": [
+    {
+      "id_historia": "ACTIVIDA-001",
+      "titulo": "reunion Armar el documento maestro de soluciones - 0",
+      "usuario": "Bryan",
+      "esfuerzo": "",
+      "tipo": "Asistencia",
+      "requerimiento": "",
+      "objetivo": "",
+      "criterios_de_aceptacion": [
+        "El sistema debe reunion armar el documento maestro de soluciones - 0."
+      ]
+    },
+    {
+      "id_historia": "APLIPLAS-002",
+      "titulo": "Creación de Plantilla de Lista de Precios - LUNES",
+      "usuario": "Mafer",
+      "esfuerzo": "",
+      "tipo": "Asistencia",
+      "requerimiento": "",
+      "objetivo": "",
+      "criterios_de_aceptacion": [
+        "El sistema debe creación de plantilla de lista de precios - lunes."
+      ]
+    },
+    {
+      "id_historia": "PECS-003",
+      "titulo": "Migración de Base con Localizacion - 0",
+      "usuario": "Cristina",
+      "esfuerzo": "",
+      "tipo": "Asistencia",
+      "requerimiento": "",
+      "objetivo": "",
+      "criterios_de_aceptacion": [
+        "El sistema debe migración de base con localizacion - 0."
+      ]
+    },
+    {
+      "id_historia": "MOTO-004",
+      "titulo": "Novedades de incompletos- HOY",
+      "usuario": "Cristina",
+      "esfuerzo": "",
+      "tipo": "Asistencia",
+      "requerimiento": "",
+      "objetivo": "",
+      "criterios_de_aceptacion": [
+        "El sistema debe novedades de incompletos- hoy."
+      ]
+    },
+    {
+      "id_historia": "MOTO-005",
+      "titulo": "Kardex (Soporte)",
+      "usuario": "Cristina",
+      "esfuerzo": "",
+      "tipo": "Asistencia",
+      "requerimiento": "",
+      "objetivo": "",
+      "criterios_de_aceptacion": [
+        "El sistema debe kardex (soporte)."
+      ]
+    },
+    {
+      "id_historia": "APLIPLAS-006",
+      "titulo": "Enlazar cheques a nómina",
+      "usuario": "Darwin",
+      "esfuerzo": "",
+      "tipo": "Desarrollo",
+      "requerimiento": "",
+      "objetivo": "",
+      "criterios_de_aceptacion": [
+        "El sistema debe enlazar cheques a nómina."
+      ]
+    },
+    {
+      "id_historia": "LOCALIZA-007",
+      "titulo": "Fechas Fiscales de envio de retenciones - GABRIELA",
+      "usuario": "Cristina",
+      "esfuerzo": "",
+      "tipo": "Desarrollo",
+      "requerimiento": "",
+      "objetivo": "",
+      "criterios_de_aceptacion": [
+        "El sistema debe fechas fiscales de envio de retenciones - gabriela."
+      ]
+    },
+    {
+      "id_historia": "APLIPLAS-008",
+      "titulo": "Modificación del reporte de sellado (Números de Bultos - Decimales) T. xxx - MARTES",
+      "usuario": "Hugo",
+      "esfuerzo": "",
+      "tipo": "Desarrollo",
+      "requerimiento": "",
+      "objetivo": "",
+      "criterios_de_aceptacion": [
+        "El sistema debe modificación del reporte de sellado (números de bultos - decimales) t. xxx - martes."
+      ]
+    },
+    {
+      "id_historia": "CHILENIT-009",
+      "titulo": "NOVEDADES FACTURAS VENTAS - POR CODIGO DE RETENCION 312",
+      "usuario": "Darwin",
+      "esfuerzo": "",
+      "tipo": "Desarrollo",
+      "requerimiento": "",
+      "objetivo": "",
+      "criterios_de_aceptacion": [
+        "El sistema debe novedades facturas ventas - por codigo de retencion 312."
+      ]
+    },
+    {
+      "id_historia": "ECOKAKAO-010",
+      "titulo": "Nómina de Soporte - FDM",
+      "usuario": "Darwin",
+      "esfuerzo": "",
+      "tipo": "Asistencia",
+      "requerimiento": "",
+      "objetivo": "",
+      "criterios_de_aceptacion": [
+        "El sistema debe nómina de soporte - fdm."
+      ]
+    },
+    {
+      "id_historia": "MOTO-011",
+      "titulo": "Corrección de reporte por retenciones duplicadas",
+      "usuario": "Darwin",
+      "esfuerzo": "",
+      "tipo": "Desarrollo",
+      "requerimiento": "",
+      "objetivo": "",
+      "criterios_de_aceptacion": [
+        "El sistema debe corrección de reporte por retenciones duplicadas."
+      ]
+    },
+    {
+      "id_historia": "PECS-012",
+      "titulo": "Solicitud de soporte de odoo - IVA EN FACTURA",
+      "usuario": "Darwin",
+      "esfuerzo": "",
+      "tipo": "Asistencia",
+      "requerimiento": "",
+      "objetivo": "",
+      "criterios_de_aceptacion": [
+        "El sistema debe solicitud de soporte de odoo - iva en factura."
+      ]
+    },
+    {
+      "id_historia": "DINAMO-013",
+      "titulo": "Migración de codigo de revisión de secuencias",
+      "usuario": "Darwin",
+      "esfuerzo": "",
+      "tipo": "Asistencia",
+      "requerimiento": "",
+      "objetivo": "",
+      "criterios_de_aceptacion": [
+        "El sistema debe migración de codigo de revisión de secuencias."
+      ]
+    },
+    {
+      "id_historia": "ANIPROTE-014",
+      "titulo": "Seguimiento facturación de Guatemala",
+      "usuario": "Gabriela",
+      "esfuerzo": "",
+      "tipo": "Soporte",
+      "requerimiento": "",
+      "objetivo": "",
+      "criterios_de_aceptacion": [
+        "El sistema debe seguimiento facturación de guatemala."
+      ]
+    },
+    {
+      "id_historia": "CHILENIT-015",
+      "titulo": "NOVEDADES FACTURAS VENTAS - POR CODIGO DE RETENCION 312",
+      "usuario": "Gabriela",
+      "esfuerzo": "",
+      "tipo": "Soporte",
+      "requerimiento": "",
+      "objetivo": "",
+      "criterios_de_aceptacion": [
+        "El sistema debe novedades facturas ventas - por codigo de retencion 312."
+      ]
+    },
+    {
+      "id_historia": "LOCALIZA-016",
+      "titulo": "Fechas Fiscales de envio de retenciones",
+      "usuario": "Gabriela",
+      "esfuerzo": "",
+      "tipo": "Soporte",
+      "requerimiento": "",
+      "objetivo": "",
+      "criterios_de_aceptacion": [
+        "El sistema debe fechas fiscales de envio de retenciones."
+      ]
+    },
+    {
+      "id_historia": "CUSPIDE-017",
+      "titulo": "Pruebas de Desarrollos Entregados",
+      "usuario": "Gaby",
+      "esfuerzo": "",
+      "tipo": "Asistencia",
+      "requerimiento": "",
+      "objetivo": "",
+      "criterios_de_aceptacion": [
+        "El sistema debe pruebas de desarrollos entregados."
+      ]
+    },
+    {
+      "id_historia": "CUSPIDE-018",
+      "titulo": "Reunión de Entrega de desarrollos - semana anterior",
+      "usuario": "Gaby",
+      "esfuerzo": "",
+      "tipo": "Asistencia",
+      "requerimiento": "",
+      "objetivo": "",
+      "criterios_de_aceptacion": [
+        "El sistema debe reunión de entrega de desarrollos - semana anterior."
+      ]
+    },
+    {
+      "id_historia": "NUTRICER-019",
+      "titulo": "Actualizacion de Proyectos Odoo - MARTES",
+      "usuario": "Gaby",
+      "esfuerzo": "",
+      "tipo": "Asistencia",
+      "requerimiento": "",
+      "objetivo": "",
+      "criterios_de_aceptacion": [
+        "El sistema debe actualizacion de proyectos odoo - martes."
+      ]
+    },
+    {
+      "id_historia": "CUSPIDE-020",
+      "titulo": "Actualización de Proyectos (Tareas de Desarrollo)",
+      "usuario": "Gaby",
+      "esfuerzo": "",
+      "tipo": "Funcional",
+      "requerimiento": "",
+      "objetivo": "",
+      "criterios_de_aceptacion": [
+        "El sistema debe actualización de proyectos (tareas de desarrollo)."
+      ]
+    },
+    {
+      "id_historia": "NUTRICER-021",
+      "titulo": "Seguimiento de Plantillas iniciales llenas",
+      "usuario": "Gaby",
+      "esfuerzo": "",
+      "tipo": "Asistencia",
+      "requerimiento": "",
+      "objetivo": "",
+      "criterios_de_aceptacion": [
+        "El sistema debe seguimiento de plantillas iniciales llenas."
+      ]
+    },
+    {
+      "id_historia": "NUTRICER-022",
+      "titulo": "Creación/Revisión de Tareas para Desarrollo",
+      "usuario": "Gaby",
+      "esfuerzo": "",
+      "tipo": "Asistencia",
+      "requerimiento": "",
+      "objetivo": "",
+      "criterios_de_aceptacion": [
+        "El sistema debe creación/revisión de tareas para desarrollo."
+      ]
+    },
+    {
+      "id_historia": "DINAMO-023",
+      "titulo": "Pruebas de Avance CRM",
+      "usuario": "Gaby",
+      "esfuerzo": "",
+      "tipo": "Asistencia",
+      "requerimiento": "",
+      "objetivo": "",
+      "criterios_de_aceptacion": [
+        "El sistema debe pruebas de avance crm."
+      ]
+    },
+    {
+      "id_historia": "CUSPIDE-024",
+      "titulo": "Reunión de Entrega de desarrollos - semana anterior",
+      "usuario": "Harry",
+      "esfuerzo": "",
+      "tipo": "Asistencia",
+      "requerimiento": "",
+      "objetivo": "",
+      "criterios_de_aceptacion": [
+        "El sistema debe reunión de entrega de desarrollos - semana anterior."
+      ]
+    },
+    {
+      "id_historia": "APLIPLAS-025",
+      "titulo": "Notificación de Novedades del correo del Viernes",
+      "usuario": "Mafer",
+      "esfuerzo": "",
+      "tipo": "Asistencia",
+      "requerimiento": "",
+      "objetivo": "",
+      "criterios_de_aceptacion": [
+        "El sistema debe notificación de novedades del correo del viernes."
+      ]
+    },
+    {
+      "id_historia": "APLIPLAS-026",
+      "titulo": "Reportes de Inventario - Valoracion - Existencias - MARTES",
+      "usuario": "Cristina",
+      "esfuerzo": "",
+      "tipo": "Asistencia",
+      "requerimiento": "",
+      "objetivo": "",
+      "criterios_de_aceptacion": [
+        "El sistema debe reportes de inventario - valoracion - existencias - martes."
+      ]
+    },
+    {
+      "id_historia": "APLIPLAS-027",
+      "titulo": "Reunión de Cómite",
+      "usuario": "Bryan",
+      "esfuerzo": "",
+      "tipo": "Asistencia",
+      "requerimiento": "",
+      "objetivo": "",
+      "criterios_de_aceptacion": [
+        "El sistema debe reunión de cómite."
+      ]
+    },
+    {
+      "id_historia": "AROMACAC-028",
+      "titulo": "Seguimiento de Levantamiento de Procesos",
+      "usuario": "Jean",
+      "esfuerzo": "",
+      "tipo": "Asistencia",
+      "requerimiento": "",
+      "objetivo": "",
+      "criterios_de_aceptacion": [
+        "El sistema debe seguimiento de levantamiento de procesos."
+      ]
+    },
+    {
+      "id_historia": "PECS-029",
+      "titulo": "Pruebas de base migrada de localizacion",
+      "usuario": "Lissette",
+      "esfuerzo": "",
+      "tipo": "Asistencia",
+      "requerimiento": "",
+      "objetivo": "",
+      "criterios_de_aceptacion": [
+        "El sistema debe pruebas de base migrada de localizacion."
+      ]
+    },
+    {
+      "id_historia": "MOTO-030",
+      "titulo": "Recosteo de Incompletos - MAÑANA",
+      "usuario": "Lissette",
+      "esfuerzo": "",
+      "tipo": "Asistencia",
+      "requerimiento": "",
+      "objetivo": "",
+      "criterios_de_aceptacion": [
+        "El sistema debe recosteo de incompletos - mañana."
+      ]
+    },
+    {
+      "id_historia": "ECUALIQU-031",
+      "titulo": "Liquidación de Viajes - 46051",
+      "usuario": "Lissette",
+      "esfuerzo": "",
+      "tipo": "Asistencia",
+      "requerimiento": "",
+      "objetivo": "",
+      "criterios_de_aceptacion": [
+        "El sistema debe liquidación de viajes - 46051."
+      ]
+    },
+    {
+      "id_historia": "ACTIVIDA-032",
+      "titulo": "reunion Armar el documento maestro de soluciones",
+      "usuario": "Lissette",
+      "esfuerzo": "",
+      "tipo": "Asistencia",
+      "requerimiento": "",
+      "objetivo": "",
+      "criterios_de_aceptacion": [
+        "El sistema debe reunion armar el documento maestro de soluciones."
+      ]
+    },
+    {
+      "id_historia": "NUTRICER-033",
+      "titulo": "Traspaso de Proyecto - Desarrollo -Martes 10 am",
+      "usuario": "Lissette",
+      "esfuerzo": "",
+      "tipo": "Asistencia",
+      "requerimiento": "",
+      "objetivo": "",
+      "criterios_de_aceptacion": [
+        "El sistema debe traspaso de proyecto - desarrollo -martes 10 am."
+      ]
+    },
+    {
+      "id_historia": "ECUALIQU-034",
+      "titulo": "Migracion de datos",
+      "usuario": "Lissette",
+      "esfuerzo": "",
+      "tipo": "Asistencia",
+      "requerimiento": "",
+      "objetivo": "",
+      "criterios_de_aceptacion": [
+        "El sistema debe migracion de datos."
+      ]
+    },
+    {
+      "id_historia": "ECUALIQU-035",
+      "titulo": "Migracion de datos",
+      "usuario": "Mafer",
+      "esfuerzo": "",
+      "tipo": "Asistencia",
+      "requerimiento": "",
+      "objetivo": "",
+      "criterios_de_aceptacion": [
+        "El sistema debe migracion de datos."
+      ]
+    },
+    {
+      "id_historia": "ECUALIQU-036",
+      "titulo": "Reunión de Desarrollos",
+      "usuario": "Lissette",
+      "esfuerzo": "",
+      "tipo": "Asistencia",
+      "requerimiento": "",
+      "objetivo": "",
+      "criterios_de_aceptacion": [
+        "El sistema debe reunión de desarrollos."
+      ]
+    },
+    {
+      "id_historia": "LOCALIZA-037",
+      "titulo": "Fechas Fiscales de envio de retenciones",
+      "usuario": "Lissette",
+      "esfuerzo": "",
+      "tipo": "Asistencia",
+      "requerimiento": "",
+      "objetivo": "",
+      "criterios_de_aceptacion": [
+        "El sistema debe fechas fiscales de envio de retenciones."
+      ]
+    },
+    {
+      "id_historia": "ECUALIQU-038",
+      "titulo": "Traspaso de Casos de Facturación",
+      "usuario": "Lissette",
+      "esfuerzo": "",
+      "tipo": "Asistencia",
+      "requerimiento": "",
+      "objetivo": "",
+      "criterios_de_aceptacion": [
+        "El sistema debe traspaso de casos de facturación."
+      ]
+    },
+    {
+      "id_historia": "APLIPLAS-039",
+      "titulo": "Reunión de Cómite",
+      "usuario": "Lissette",
+      "esfuerzo": "",
+      "tipo": "Asistencia",
+      "requerimiento": "",
+      "objetivo": "",
+      "criterios_de_aceptacion": [
+        "El sistema debe reunión de cómite."
+      ]
+    },
+    {
+      "id_historia": "APLIPLAS-040",
+      "titulo": "Saldos por Maquina",
+      "usuario": "Hugo",
+      "esfuerzo": "",
+      "tipo": "Desarrollo",
+      "requerimiento": "",
+      "objetivo": "",
+      "criterios_de_aceptacion": [
+        "El sistema debe saldos por maquina."
+      ]
+    },
+    {
+      "id_historia": "DINAMO-041",
+      "titulo": "Pruebas de Historico de Actas - Nelio",
+      "usuario": "Gaby",
+      "esfuerzo": "",
+      "tipo": "Asistencia",
+      "requerimiento": "",
+      "objetivo": "",
+      "criterios_de_aceptacion": [
+        "El sistema debe pruebas de historico de actas - nelio."
+      ]
+    },
+    {
+      "id_historia": "DINAMO-042",
+      "titulo": "Pruebas de Historico de Actas - Gregorio",
+      "usuario": "Gaby",
+      "esfuerzo": "",
+      "tipo": "Asistencia",
+      "requerimiento": "",
+      "objetivo": "",
+      "criterios_de_aceptacion": [
+        "El sistema debe pruebas de historico de actas - gregorio."
+      ]
+    },
+    {
+      "id_historia": "DINAMO-043",
+      "titulo": "Elaboración de actas de prestamos",
+      "usuario": "Gaby",
+      "esfuerzo": "",
+      "tipo": "Asistencia",
+      "requerimiento": "",
+      "objetivo": "",
+      "criterios_de_aceptacion": [
+        "El sistema debe elaboración de actas de prestamos."
+      ]
+    },
+    {
+      "id_historia": "DINAMO-044",
+      "titulo": "Soporte en nómina - FDM",
+      "usuario": "Gaby",
+      "esfuerzo": "",
+      "tipo": "Asistencia",
+      "requerimiento": "",
+      "objetivo": "",
+      "criterios_de_aceptacion": [
+        "El sistema debe soporte en nómina - fdm."
+      ]
+    },
+    {
+      "id_historia": "DINAMO-045",
+      "titulo": "Migración de Plantillas de Operacioones",
+      "usuario": "Gaby",
+      "esfuerzo": "",
+      "tipo": "Asistencia",
+      "requerimiento": "",
+      "objetivo": "",
+      "criterios_de_aceptacion": [
+        "El sistema debe migración de plantillas de operacioones."
+      ]
+    },
+    {
+      "id_historia": "DINAMO-046",
+      "titulo": "Migración de Plantillas de Prestamos",
+      "usuario": "Gaby",
+      "esfuerzo": "",
+      "tipo": "Asistencia",
+      "requerimiento": "",
+      "objetivo": "",
+      "criterios_de_aceptacion": [
+        "El sistema debe migración de plantillas de prestamos."
+      ]
+    },
+    {
+      "id_historia": "DINAMO-047",
+      "titulo": "Recepción de Diseño para KPIS y Dashboards",
+      "usuario": "Gaby",
+      "esfuerzo": "",
+      "tipo": "Asistencia",
+      "requerimiento": "",
+      "objetivo": "",
+      "criterios_de_aceptacion": [
+        "El sistema debe recepción de diseño para kpis y dashboards."
+      ]
+    },
+    {
+      "id_historia": "DINAMO-048",
+      "titulo": "Traspaso de Diseño KPIs/Dashboard-Nelio",
+      "usuario": "Gaby",
+      "esfuerzo": "",
+      "tipo": "Asistencia",
+      "requerimiento": "",
+      "objetivo": "",
+      "criterios_de_aceptacion": [
+        "El sistema debe traspaso de diseño kpis/dashboard-nelio."
+      ]
+    },
+    {
+      "id_historia": "DINAMO-049",
+      "titulo": "Pruebas para reinversión de prestamos y aumento de capital",
+      "usuario": "Gaby",
+      "esfuerzo": "",
+      "tipo": "Asistencia",
+      "requerimiento": "",
+      "objetivo": "",
+      "criterios_de_aceptacion": [
+        "El sistema debe pruebas para reinversión de prestamos y aumento de capital."
+      ]
+    },
+    {
+      "id_historia": "APLIPLAS-050",
+      "titulo": "T7939. Campo packaging_id obligatorio en LdM Tipo de Orden=sellado en model=mrp.bom",
+      "usuario": "Hugo",
+      "esfuerzo": "",
+      "tipo": "Asistencia",
+      "requerimiento": "",
+      "objetivo": "",
+      "criterios_de_aceptacion": [
+        "El sistema debe t7939. campo packaging_id obligatorio en ldm tipo de orden=sellado en model=mrp.bom."
+      ]
+    },
+    {
+      "id_historia": "DINAMO-051",
+      "titulo": "Elaboración de Acta de Cierre de Proyecto",
+      "usuario": "Gaby",
+      "esfuerzo": "",
+      "tipo": "Asistencia",
+      "requerimiento": "",
+      "objetivo": "",
+      "criterios_de_aceptacion": [
+        "El sistema debe elaboración de acta de cierre de proyecto."
+      ]
+    },
+    {
+      "id_historia": "CUSPIDE-052",
+      "titulo": "Solicitud de materiales entre despachos",
+      "usuario": "Harry",
+      "esfuerzo": "",
+      "tipo": "Desarrollo",
+      "requerimiento": "",
+      "objetivo": "",
+      "criterios_de_aceptacion": [
+        "El sistema debe solicitud de materiales entre despachos."
+      ]
+    },
+    {
+      "id_historia": "CUSPIDE-053",
+      "titulo": "Movimientos entre bodegas",
+      "usuario": "Harry",
+      "esfuerzo": "",
+      "tipo": "Desarrollo",
+      "requerimiento": "",
+      "objetivo": "",
+      "criterios_de_aceptacion": [
+        "El sistema debe movimientos entre bodegas."
+      ]
+    },
+    {
+      "id_historia": "CUSPIDE-054",
+      "titulo": "Reunión de Entrega de desarrollos",
+      "usuario": "Gaby",
+      "esfuerzo": "",
+      "tipo": "Asistencia",
+      "requerimiento": "",
+      "objetivo": "",
+      "criterios_de_aceptacion": [
+        "El sistema debe reunión de entrega de desarrollos."
+      ]
+    },
+    {
+      "id_historia": "CUSPIDE-055",
+      "titulo": "Reunión de Entrega de desarrollos",
+      "usuario": "Harry",
+      "esfuerzo": "",
+      "tipo": "Asistencia",
+      "requerimiento": "",
+      "objetivo": "",
+      "criterios_de_aceptacion": [
+        "El sistema debe reunión de entrega de desarrollos."
+      ]
+    },
+    {
+      "id_historia": "CUSPIDE-056",
+      "titulo": "Permitir agregar notas internas o visibles, al cliente en el cotizador",
+      "usuario": "Harry",
+      "esfuerzo": "",
+      "tipo": "Desarrollo",
+      "requerimiento": "",
+      "objetivo": "",
+      "criterios_de_aceptacion": [
+        "El sistema debe permitir agregar notas internas o visibles, al cliente en el cotizador."
+      ]
+    },
+    {
+      "id_historia": "CUSPIDE-057",
+      "titulo": "Contabilizar automaticamente facturas/nc con cuentas correctamente imputadas",
+      "usuario": "Harry",
+      "esfuerzo": "",
+      "tipo": "Desarrollo",
+      "requerimiento": "",
+      "objetivo": "",
+      "criterios_de_aceptacion": [
+        "El sistema debe contabilizar automaticamente facturas/nc con cuentas correctamente imputadas."
+      ]
+    },
+    {
+      "id_historia": "APLIPLAS-058",
+      "titulo": "Asignación de Costos de tintas",
+      "usuario": "Cristina",
+      "esfuerzo": "",
+      "tipo": "Desarrollo",
+      "requerimiento": "",
+      "objetivo": "",
+      "criterios_de_aceptacion": [
+        "El sistema debe asignación de costos de tintas."
+      ]
+    },
+    {
+      "id_historia": "APLIPLAS-059",
+      "titulo": "Correcciones de reporte de Materia Prima",
+      "usuario": "Darwin",
+      "esfuerzo": "",
+      "tipo": "Desarrollo",
+      "requerimiento": "",
+      "objetivo": "",
+      "criterios_de_aceptacion": [
+        "El sistema debe correcciones de reporte de materia prima."
+      ]
+    },
+    {
+      "id_historia": "APLIPLAS-060",
+      "titulo": "Pruebas de Cintas",
+      "usuario": "Mafer",
+      "esfuerzo": "",
+      "tipo": "Asistencia",
+      "requerimiento": "",
+      "objetivo": "",
+      "criterios_de_aceptacion": [
+        "El sistema debe pruebas de cintas."
+      ]
+    },
+    {
+      "id_historia": "APLIPLAS-061",
+      "titulo": "Revisión de proceso de distribución",
+      "usuario": "Mafer",
+      "esfuerzo": "",
+      "tipo": "Asistencia",
+      "requerimiento": "",
+      "objetivo": "",
+      "criterios_de_aceptacion": [
+        "El sistema debe revisión de proceso de distribución."
+      ]
+    },
+    {
+      "id_historia": "APLIPLAS-062",
+      "titulo": "Revisión de proceso de distribución",
+      "usuario": "Hugo",
+      "esfuerzo": "",
+      "tipo": "Desarrollo",
+      "requerimiento": "",
+      "objetivo": "",
+      "criterios_de_aceptacion": [
+        "El sistema debe revisión de proceso de distribución."
+      ]
+    },
+    {
+      "id_historia": "APLIPLAS-063",
+      "titulo": "Capacitación Nomina - PT2",
+      "usuario": "Gaby",
+      "esfuerzo": "",
+      "tipo": "Asistencia",
+      "requerimiento": "",
+      "objetivo": "",
+      "criterios_de_aceptacion": [
+        "El sistema debe capacitación nomina - pt2."
+      ]
+    },
+    {
+      "id_historia": "ZHM-064",
+      "titulo": "Reunión de entrega de desarrollos de suscripciones",
+      "usuario": "Mafer",
+      "esfuerzo": "",
+      "tipo": "Asistencia",
+      "requerimiento": "",
+      "objetivo": "",
+      "criterios_de_aceptacion": [
+        "El sistema debe reunión de entrega de desarrollos de suscripciones."
+      ]
+    },
+    {
+      "id_historia": "ZHM-065",
+      "titulo": "Seguimiento de recpeción de CRM",
+      "usuario": "Mafer",
+      "esfuerzo": "",
+      "tipo": "Asistencia",
+      "requerimiento": "",
+      "objetivo": "",
+      "criterios_de_aceptacion": [
+        "El sistema debe seguimiento de recpeción de crm."
+      ]
+    },
+    {
+      "id_historia": "ECUALIQU-066",
+      "titulo": "Traspaso de Casos de Facturación",
+      "usuario": "Cristina",
+      "esfuerzo": "",
+      "tipo": "Asistencia",
+      "requerimiento": "",
+      "objetivo": "",
+      "criterios_de_aceptacion": [
+        "El sistema debe traspaso de casos de facturación."
+      ]
+    },
+    {
+      "id_historia": "CEQUAMAQ-067",
+      "titulo": "Seguimiento de alcance",
+      "usuario": "Mafer",
+      "esfuerzo": "",
+      "tipo": "Asistencia",
+      "requerimiento": "",
+      "objetivo": "",
+      "criterios_de_aceptacion": [
+        "El sistema debe seguimiento de alcance."
+      ]
+    },
+    {
+      "id_historia": "CUSPIDE-068",
+      "titulo": "Reunión de entrega con cliente",
+      "usuario": "Gaby",
+      "esfuerzo": "",
+      "tipo": "Desarrollo",
+      "requerimiento": "",
+      "objetivo": "",
+      "criterios_de_aceptacion": [
+        "El sistema debe reunión de entrega con cliente."
+      ]
+    },
+    {
+      "id_historia": "NUTRICER-069",
+      "titulo": "Traspaso de Proyecto - Desarrollo -Martes 10 am",
+      "usuario": "Cristina",
+      "esfuerzo": "",
+      "tipo": "Desarrollo",
+      "requerimiento": "",
+      "objetivo": "",
+      "criterios_de_aceptacion": [
+        "El sistema debe traspaso de proyecto - desarrollo -martes 10 am."
+      ]
+    },
+    {
+      "id_historia": "NUTRICER-070",
+      "titulo": "Traspaso de Proyecto - Desarrollo -Martes 10 am",
+      "usuario": "Jean",
+      "esfuerzo": "",
+      "tipo": "Asistencia",
+      "requerimiento": "",
+      "objetivo": "",
+      "criterios_de_aceptacion": [
+        "El sistema debe traspaso de proyecto - desarrollo -martes 10 am."
+      ]
+    },
+    {
+      "id_historia": "NUTRICER-071",
+      "titulo": "Seguimiento de Plantillas iniciales llenas",
+      "usuario": "Jean",
+      "esfuerzo": "",
+      "tipo": "Asistencia",
+      "requerimiento": "",
+      "objetivo": "",
+      "criterios_de_aceptacion": [
+        "El sistema debe seguimiento de plantillas iniciales llenas."
+      ]
+    },
+    {
+      "id_historia": "AROMACAC-072",
+      "titulo": "Seguimiento de Plantillas iniciales llenas",
+      "usuario": "Jean",
+      "esfuerzo": "",
+      "tipo": "Asistencia",
+      "requerimiento": "",
+      "objetivo": "",
+      "criterios_de_aceptacion": [
+        "El sistema debe seguimiento de plantillas iniciales llenas."
+      ]
+    },
+    {
+      "id_historia": "AROMACAC-073",
+      "titulo": "Seguimiento de Plantillas iniciales llenas",
+      "usuario": "Gaby",
+      "esfuerzo": "",
+      "tipo": "Asistencia",
+      "requerimiento": "",
+      "objetivo": "",
+      "criterios_de_aceptacion": [
+        "El sistema debe seguimiento de plantillas iniciales llenas."
+      ]
+    },
+    {
+      "id_historia": "AROMACAC-074",
+      "titulo": "Actualización de Proyectos (Tareas de Desarrollo)",
+      "usuario": "Gaby",
+      "esfuerzo": "",
+      "tipo": "Asistencia",
+      "requerimiento": "",
+      "objetivo": "",
+      "criterios_de_aceptacion": [
+        "El sistema debe actualización de proyectos (tareas de desarrollo)."
+      ]
+    },
+    {
+      "id_historia": "AROMACAC-075",
+      "titulo": "Traspaso de conocimiento a desarrollador - Jueves",
+      "usuario": "Gaby",
+      "esfuerzo": "",
+      "tipo": "Asistencia",
+      "requerimiento": "",
+      "objetivo": "",
+      "criterios_de_aceptacion": [
+        "El sistema debe traspaso de conocimiento a desarrollador - jueves."
+      ]
+    },
+    {
+      "id_historia": "AROMACAC-076",
+      "titulo": "Traspaso de conocimiento a desarrollador- Jueves",
+      "usuario": "Jean",
+      "esfuerzo": "",
+      "tipo": "Asistencia",
+      "requerimiento": "",
+      "objetivo": "",
+      "criterios_de_aceptacion": [
+        "El sistema debe traspaso de conocimiento a desarrollador- jueves."
+      ]
+    },
+    {
+      "id_historia": "MOTO-077",
+      "titulo": "Kardex de PT",
+      "usuario": "Lissette",
+      "esfuerzo": "",
+      "tipo": "Asistencia",
+      "requerimiento": "",
+      "objetivo": "",
+      "criterios_de_aceptacion": [
+        "El sistema debe kardex de pt."
+      ]
+    },
+    {
+      "id_historia": "MOTO-078",
+      "titulo": "Kardex de PT",
+      "usuario": "Jean",
+      "esfuerzo": "",
+      "tipo": "Asistencia",
+      "requerimiento": "",
+      "objetivo": "",
+      "criterios_de_aceptacion": [
+        "El sistema debe kardex de pt."
+      ]
+    },
+    {
+      "id_historia": "MOTO-079",
+      "titulo": "Actualizacion de costo de venta de facturas",
+      "usuario": "Lissette",
+      "esfuerzo": "",
+      "tipo": "Asistencia",
+      "requerimiento": "",
+      "objetivo": "",
+      "criterios_de_aceptacion": [
+        "El sistema debe actualizacion de costo de venta de facturas."
+      ]
+    },
+    {
+      "id_historia": "ECOKAKAO-080",
+      "titulo": "Soporte de recosteo",
+      "usuario": "Lissette",
+      "esfuerzo": "",
+      "tipo": "Asistencia",
+      "requerimiento": "",
+      "objetivo": "",
+      "criterios_de_aceptacion": [
+        "El sistema debe soporte de recosteo."
+      ]
+    },
+    {
+      "id_historia": "ANIPROTE-081",
+      "titulo": "Reunión de Tickets con Cliente",
+      "usuario": "Gabriela",
+      "esfuerzo": "",
+      "tipo": "Soporte",
+      "requerimiento": "",
+      "objetivo": "",
+      "criterios_de_aceptacion": [
+        "El sistema debe reunión de tickets con cliente."
+      ]
+    },
+    {
+      "id_historia": "ANIPROTE-082",
+      "titulo": "Modificacion de factura del picking",
+      "usuario": "Darwin",
+      "esfuerzo": "",
+      "tipo": "Soporte",
+      "requerimiento": "",
+      "objetivo": "",
+      "criterios_de_aceptacion": [
+        "El sistema debe modificacion de factura del picking."
+      ]
+    },
+    {
+      "id_historia": "PECS-083",
+      "titulo": "Reunión de Localizacion",
+      "usuario": "Harry",
+      "esfuerzo": "",
+      "tipo": "Desarrollo",
+      "requerimiento": "",
+      "objetivo": "",
+      "criterios_de_aceptacion": [
+        "El sistema debe reunión de localizacion."
+      ]
+    },
+    {
+      "id_historia": "PECS-084",
+      "titulo": "Entrega de link de pruebas Cliente",
+      "usuario": "Gaby",
+      "esfuerzo": "",
+      "tipo": "Asistencia",
+      "requerimiento": "",
+      "objetivo": "",
+      "criterios_de_aceptacion": [
+        "El sistema debe entrega de link de pruebas cliente."
+      ]
+    },
+    {
+      "id_historia": "APOYO CO-085",
+      "titulo": "Estimación Santana Brewing",
+      "usuario": "Lissette",
+      "esfuerzo": "",
+      "tipo": "Asistencia",
+      "requerimiento": "",
+      "objetivo": "",
+      "criterios_de_aceptacion": [
+        "El sistema debe estimación santana brewing."
+      ]
+    },
+    {
+      "id_historia": "APOYO CO-086",
+      "titulo": "Estimación Santana Brewing",
+      "usuario": "Cristina",
+      "esfuerzo": "",
+      "tipo": "Asistencia",
+      "requerimiento": "",
+      "objetivo": "",
+      "criterios_de_aceptacion": [
+        "El sistema debe estimación santana brewing."
+      ]
+    },
+    {
+      "id_historia": "APOYO CO-087",
+      "titulo": "Estimación Novaseguros",
+      "usuario": "Lissette",
+      "esfuerzo": "",
+      "tipo": "Asistencia",
+      "requerimiento": "",
+      "objetivo": "",
+      "criterios_de_aceptacion": [
+        "El sistema debe estimación novaseguros."
+      ]
+    },
+    {
+      "id_historia": "APOYO CO-088",
+      "titulo": "Estimación Novaseguros",
+      "usuario": "Cristina",
+      "esfuerzo": "",
+      "tipo": "Asistencia",
+      "requerimiento": "",
+      "objetivo": "",
+      "criterios_de_aceptacion": [
+        "El sistema debe estimación novaseguros."
+      ]
+    },
+    {
+      "id_historia": "APOYO CO-089",
+      "titulo": "Revisión de Correo Bogati",
+      "usuario": "Lissette",
+      "esfuerzo": "",
+      "tipo": "Asistencia",
+      "requerimiento": "",
+      "objetivo": "",
+      "criterios_de_aceptacion": [
+        "El sistema debe revisión de correo bogati."
+      ]
+    },
+    {
+      "id_historia": "APOYO CO-090",
+      "titulo": "Revisión de Correo Bogati",
+      "usuario": "Cristina",
+      "esfuerzo": "",
+      "tipo": "Asistencia",
+      "requerimiento": "",
+      "objetivo": "",
+      "criterios_de_aceptacion": [
+        "El sistema debe revisión de correo bogati."
+      ]
+    },
+    {
+      "id_historia": "APOYO CO-091",
+      "titulo": "Demo Bananera Viesfrut",
+      "usuario": "Lissette",
+      "esfuerzo": "",
+      "tipo": "Asistencia",
+      "requerimiento": "",
+      "objetivo": "",
+      "criterios_de_aceptacion": [
+        "El sistema debe demo bananera viesfrut."
+      ]
+    },
+    {
+      "id_historia": "APOYO CO-092",
+      "titulo": "Demo Bananera Viesfrut",
+      "usuario": "Mafer",
+      "esfuerzo": "",
+      "tipo": "Asistencia",
+      "requerimiento": "",
+      "objetivo": "",
+      "criterios_de_aceptacion": [
+        "El sistema debe demo bananera viesfrut."
+      ]
+    },
+    {
+      "id_historia": "APOYO CO-093",
+      "titulo": "Demo NovaEcuador",
+      "usuario": "Jean",
+      "esfuerzo": "",
+      "tipo": "Asistencia",
+      "requerimiento": "",
+      "objetivo": "",
+      "criterios_de_aceptacion": [
+        "El sistema debe demo novaecuador."
+      ]
+    },
+    {
+      "id_historia": "APOYO CO-094",
+      "titulo": "Demo NovaEcuador",
+      "usuario": "Gabriela",
+      "esfuerzo": "",
+      "tipo": "Asistencia",
+      "requerimiento": "",
+      "objetivo": "",
+      "criterios_de_aceptacion": [
+        "El sistema debe demo novaecuador."
+      ]
+    },
+    {
+      "id_historia": "APOYO CO-095",
+      "titulo": "Relevamiento de Galjosa",
+      "usuario": "Lissette",
+      "esfuerzo": "",
+      "tipo": "Asistencia",
+      "requerimiento": "",
+      "objetivo": "",
+      "criterios_de_aceptacion": [
+        "El sistema debe relevamiento de galjosa."
+      ]
+    },
+    {
+      "id_historia": "APOYO CO-096",
+      "titulo": "Relevamiento de Galjosa",
+      "usuario": "Cristina",
+      "esfuerzo": "",
+      "tipo": "Asistencia",
+      "requerimiento": "",
+      "objetivo": "",
+      "criterios_de_aceptacion": [
+        "El sistema debe relevamiento de galjosa."
+      ]
+    }
+  ],
+  "preguntas_para_aclarar": [
+    "¿Cuál es el esfuerzo estimado para las tareas donde el campo 'Esfuerzo' está vacío?",
+    "Para tareas como 'Novedades de incompletos- HOY' o 'Recosteo de Incompletos - MAÑANA', ¿cuáles son las acciones concretas y los incompletos específicos a abordar?",
+    "¿Los sufijos como '- LUNES', '- MARTES', '- HOY', '- MAÑANA', '- Jueves' indican fechas límite obligatorias o solo recordatorios?",
+    "En tareas de 'Seguimiento de ...' o 'Pruebas de ...', ¿qué criterios específicos definen que el seguimiento o prueba está completo?",
+    "¿Los proyectos 'ACTIVIDA-001' y 'ACTIVIDA-002' son IDs internos de actividades o proyectos de clientes? ¿Existe documentación adicional?",
+    "Para tareas repetidas con diferentes asignados, ¿deben fusionarse en una sola historia o mantenerse separadas por responsable?",
+    "¿Qué detalles técnicos adicionales hay para 'T7939. Campo packaging_id obligatorio en LdM Tipo de Orden=sellado en model=mrp.bom'?",
+    "¿Qué significa la abreviatura 'FDM' en tareas relacionadas con nómina?",
+    "Para el proyecto 'Apoyo Comercial', ¿es un proyecto interno de ventas o tiene un código/nombre formal diferente?",
+    "¿Los nombres abreviados de asignados necesitan mapeo a nombres completos?"
+  ]
+}

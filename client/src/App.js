@@ -235,13 +235,9 @@ function App() {
       const columnsResponse = await api.getColumns(jsonFileName);
       setColumns(columnsResponse.data);
 
-      // Cargar las historias asociadas a este archivo JSON
-      if (response.data.stories) {
-        setStories(response.data.stories);
-      } else {
-        const storiesResponse = await api.getStoriesByJsonFile(jsonFileName);
-        setStories(storiesResponse.data.stories);
-      }
+      // Cargar TODAS las historias del archivo desde la BD (no solo las recién creadas)
+      const storiesResponse = await api.getStoriesByJsonFile(jsonFileName);
+      setStories(storiesResponse.data.stories);
 
       // Cargar las preguntas asociadas a este archivo JSON
       try {

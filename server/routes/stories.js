@@ -343,82 +343,75 @@ router.post('/import', async (req, res) => {
     let currentPosition = maxPosition ? maxPosition.position + 1 : 0;
     
     const createdStories = [];
-    
+    const failedStories = [];
+    const skippedStories = [];
+
     console.log(`Processing ${historias_de_usuario.length} stories`);
     
     for (const storyData of historias_de_usuario) {
       console.log('Processing story:', storyData);
-      
-      // Check if we need to generate a new ID
-      let storyId;
-      if (storyData.id_historia) {
-        // Check if it's a valid MongoDB ObjectId
-        try {
-          storyId = new mongoose.Types.ObjectId(storyData.id_historia);
-        } catch (err) {
-          console.log('Invalid ID, generating new one');
-          storyId = new mongoose.Types.ObjectId();
-        }
-      } else {
-        storyId = new mongoose.Types.ObjectId();
-      }
-      
-      // Check if story with this ID already exists
-      const existingStory = await Story.findOne({ _id: storyId });
-      
+
+      // Always generate a new MongoDB ObjectId for _id
+      const storyId = new mongoose.Types.ObjectId();
+
+      // Check if story with this id_historia already exists in this file
+      const existingStory = storyData.id_historia
+        ? await Story.findOne({ id_historia: storyData.id_historia, jsonFileName: jsonFileName })
+        : null;
+
       if (!existingStory) {
-        // Crear criterios con timestamps
+        // Crear criterios con timestamps — filtrando textos nulos/vacíos para evitar error de validación
         const now = new Date();
-        const criteria = (storyData.criterios_de_aceptacion || []).map(text => ({
-          text,
-          checked: false,
-          createdAt: now,
-          completedAt: null
-        }));
-        
-        // Debug log para verificar los datos de la historia
-        console.log('Story data:', {
-          titulo: storyData.titulo,
-          usuario: storyData.usuario,
-          esfuerzo: storyData.esfuerzo,
-          tipo: storyData.tipo,
-          requerimiento: storyData.requerimiento,
-          hasCriterios: storyData.criterios_de_aceptacion ? storyData.criterios_de_aceptacion.length : 0
-        });
+        const criteria = (storyData.criterios_de_aceptacion || [])
+          .filter(text => text != null && String(text).trim() !== '')
+          .map(text => ({
+            text: String(text).trim(),
+            checked: false,
+            createdAt: now,
+            completedAt: null
+          }));
 
         // Usar 'titulo' o 'requerimiento' como título, con 'Sin título' como valor por defecto
-        const titulo = storyData.titulo || storyData.requerimiento || 'Sin título';
+        const titulo = (storyData.titulo || storyData.requerimiento || '').trim() || 'Sin título';
 
         const story = new Story({
           _id: storyId,
           id_historia: storyData.id_historia || null,
           title: titulo,
-          user: storyData.usuario,
-          esfuerzo: storyData.esfuerzo || '',
+          user: storyData.usuario || '',
+          esfuerzo: storyData.esfuerzo != null ? String(storyData.esfuerzo) : '',
           tipo: storyData.tipo || '',
           criteria: criteria,
           column: todoColumn._id,
           position: currentPosition,
           jsonFileName: jsonFileName
         });
-        
+
         try {
           const savedStory = await story.save();
           createdStories.push(savedStory);
           currentPosition++;
-          console.log('Story saved successfully');
         } catch (err) {
-          console.error('Error saving story:', err.message);
+          console.error(`Error saving story "${titulo}" (${storyData.id_historia}):`, err.message);
+          failedStories.push({ id_historia: storyData.id_historia, titulo, error: err.message });
         }
       } else {
-        console.log('Story already exists, skipping');
+        console.log(`Story already exists, skipping: ${storyData.id_historia}`);
+        skippedStories.push(storyData.id_historia);
       }
     }
-    
-    console.log(`${createdStories.length} stories imported successfully`);
-    
+
+    console.log(`Import result: ${createdStories.length} created, ${skippedStories.length} skipped (duplicates), ${failedStories.length} failed`);
+    if (failedStories.length > 0) {
+      console.error('Failed stories:', JSON.stringify(failedStories, null, 2));
+    }
+
     res.status(201).json({
       message: `${createdStories.length} stories imported successfully`,
+      created: createdStories.length,
+      skipped: skippedStories.length,
+      failed: failedStories.length,
+      failedStories,
       stories: createdStories
     });
   } catch (error) {
