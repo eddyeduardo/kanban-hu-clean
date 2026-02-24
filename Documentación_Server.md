@@ -17,6 +17,7 @@ Rutas principales:
 - `server/routes/jsonFiles.js`
 - `server/routes/projectConfig.js`
 - `server/routes/transcription.js`
+- `server/routes/insights.js`
 
 Modelos:
 - `server/models/Column.js`
@@ -117,6 +118,8 @@ class Story {
   +id_historia?: String
   +user?: String
   +title: String
+  +esfuerzo?: String
+  +tipo?: String
   +criteria: Criterion[]
   +column: ObjectId<Column>
   +position: Number
@@ -182,11 +185,15 @@ StoriesRouter --> Column
   - GET `/` listar JSONs cargados
   - GET `/:fileName` obtener metadatos del JSON
   - GET `/:fileName/stories` obtener historias y columnas asociadas
+  - PATCH `/:fileName/preguntas` actualizar lista de preguntas de aclaración
   - DELETE `/:fileName` eliminar JSON, historias y columnas asociadas no-default
 
 - `/api/project-config`
   - GET `/:jsonFileName` obtener configuración del proyecto
   - PUT `/:jsonFileName` actualizar configuración del proyecto
+
+- `/api/insights`
+  - POST `/` generar insights con IA a partir del estado actual del tablero
 
 - `/api/transcription`
   - POST `/check-chunks` verificar fragmentos existentes
@@ -283,6 +290,39 @@ Basada en el código actual de `server/routes/transcription.js` y `UPLOAD_README
 - **Almacenamiento externo**: subir los chunks a S3/GCS y combinar serverless; procesar en backend con funciones por lotes.
 - **Segmentación adaptativa**: ajustar duración del segmento según tamaño para optimizar llamadas a Whisper.
 - **Logs y trazas**: centralizar logs de FFmpeg y estado de transcripción para diagnóstico.
+
+---
+
+## Lógica de Importación (`POST /api/stories/import`)
+
+El endpoint procesa el array `historias_de_usuario` del JSON de forma secuencial:
+
+```
+Para cada historia:
+  1. Si tiene id_historia → busca Story donde { id_historia, jsonFileName } coincidan
+     - Encontrada → SKIP (no duplicar)
+     - No encontrada → crear historia nueva
+  2. Sin id_historia → crear siempre (sin verificar duplicados)
+
+Antes de guardar cada historia:
+  - Criterios con texto nulo o vacío se filtran automáticamente
+  - esfuerzo se convierte a String (acepta coma decimal: "0,5")
+  - Si titulo y requerimiento están vacíos → title = "Sin título"
+```
+
+**Respuesta del endpoint:**
+```json
+{
+  "message": "N stories imported successfully",
+  "created": 80,
+  "skipped": 16,
+  "failed": 0,
+  "failedStories": [],
+  "stories": [...]
+}
+```
+
+Si `failed > 0`, el array `failedStories` detalla qué historias fallaron y por qué (error de validación de Mongoose), útil para depuración.
 
 ---
 
