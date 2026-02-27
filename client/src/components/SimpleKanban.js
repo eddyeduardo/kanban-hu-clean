@@ -350,15 +350,32 @@ const SimpleKanban = ({
     }
   };
 
+  // Mover historia a columna desde el menú de la tarjeta
+  const handleMoveToColumn = (story, targetColumnId) => {
+    const targetColumn = columns.find(col => col._id === targetColumnId);
+    const columnName = targetColumn ? targetColumn.name : 'Sin columna';
+    const newPosition = localStories.filter(s => storyBelongsToColumn(s, targetColumnId)).length;
+
+    // Actualización optimista
+    setLocalStories(prev => {
+      const filtered = prev.filter(s => s._id !== story._id);
+      return [...filtered, { ...story, column: targetColumnId, user: columnName, position: newPosition }];
+    });
+
+    if (onStoryMove) {
+      onStoryMove(story._id, targetColumnId, newPosition);
+    }
+  };
+
   return (
     <div className="mb-8 flex overflow-x-auto pb-4" style={{ minHeight: '100%' }}>
       {columns.map((column, index) => {
         const columnStories = getStoriesForColumn(column._id);
-        
+
         return (
-          <DraggableColumn 
-            key={column._id} 
-            column={column} 
+          <DraggableColumn
+            key={column._id}
+            column={column}
             index={index}
             moveColumn={moveColumn}
           >
@@ -366,6 +383,7 @@ const SimpleKanban = ({
               <KanbanColumn
                 column={column}
                 stories={columnStories}
+                columns={columns}
                 onOpenStoryModal={onOpenStoryModal}
                 onCriterionCheck={onCriterionCheck}
                 onCriterionDelete={onCriterionDelete}
@@ -376,6 +394,7 @@ const SimpleKanban = ({
                 onDragEnd={handleDragEnd}
                 onDelete={handleDeleteStory}
                 onDeleteColumn={onDeleteColumn}
+                onMoveToColumn={handleMoveToColumn}
               />
             </div>
           </DraggableColumn>

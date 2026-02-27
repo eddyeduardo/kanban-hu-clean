@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { FiChevronDown, FiChevronUp, FiUser, FiEdit2, FiTrash2, FiCheck, FiZap, FiTag } from 'react-icons/fi';
+import React, { useState, useRef, useEffect } from 'react';
+import { FiChevronDown, FiChevronUp, FiUser, FiEdit2, FiTrash2, FiCheck, FiZap, FiTag, FiArrowRight } from 'react-icons/fi';
 import DraggableCriteriaList from './DraggableCriteriaList';
 
 /**
@@ -15,10 +15,30 @@ const StoryCard = ({
   onDragStart,
   onDragEnd,
   onDelete,
+  onMoveToColumn,
+  columns,
   index
 }) => {
   const [isCriteriaExpanded, setIsCriteriaExpanded] = useState(false);
   const [showActions, setShowActions] = useState(false);
+  const [showMoveMenu, setShowMoveMenu] = useState(false);
+  const moveMenuRef = useRef(null);
+
+  // Cerrar el menú al hacer clic fuera
+  useEffect(() => {
+    if (!showMoveMenu) return;
+    const handleClickOutside = (e) => {
+      if (moveMenuRef.current && !moveMenuRef.current.contains(e.target)) {
+        setShowMoveMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showMoveMenu]);
+
+  // Columna actual de la historia
+  const currentColumnId = typeof story.column === 'object' ? story.column?._id : story.column;
+  const otherColumns = (columns || []).filter(col => col._id !== currentColumnId);
 
   const totalCriteria = story.criteria ? story.criteria.length : 0;
   const completedCriteria = story.criteria ? story.criteria.filter(c => c.checked).length : 0;
@@ -218,6 +238,53 @@ const StoryCard = ({
         >
           <FiEdit2 className="w-3.5 h-3.5" />
         </button>
+
+        {/* Botón Mover a columna */}
+        {onMoveToColumn && otherColumns.length > 0 && (
+          <div className="relative" ref={moveMenuRef}>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowMoveMenu(prev => !prev);
+              }}
+              className="btn-icon w-7 h-7 text-neutral-400 hover:text-emerald-600 hover:bg-emerald-50"
+              title="Mover a columna"
+            >
+              <FiArrowRight className="w-3.5 h-3.5" />
+            </button>
+
+            {showMoveMenu && (
+              <div className="
+                absolute bottom-full right-0 mb-1 z-50
+                bg-white rounded-apple-lg shadow-apple-lg border border-neutral-100
+                py-1 min-w-[160px]
+                animate-fade-in
+              ">
+                <p className="px-3 py-1 text-[10px] font-semibold text-neutral-400 uppercase tracking-wider">
+                  Mover a
+                </p>
+                {otherColumns.map(col => (
+                  <button
+                    key={col._id}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowMoveMenu(false);
+                      onMoveToColumn(story, col._id);
+                    }}
+                    className="
+                      w-full text-left px-3 py-1.5
+                      text-sm text-neutral-700
+                      hover:bg-primary-50 hover:text-primary-700
+                      transition-colors duration-100
+                    "
+                  >
+                    {col.name}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

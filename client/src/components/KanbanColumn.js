@@ -10,6 +10,7 @@ import { sortStoriesWithCompletedLast } from '../utils/storyUtils';
 const KanbanColumn = ({
   column,
   stories,
+  columns,
   onOpenStoryModal,
   onCriterionCheck,
   onCriterionDelete,
@@ -19,7 +20,8 @@ const KanbanColumn = ({
   onDragStart,
   onDragEnd,
   onDelete,
-  onDeleteColumn
+  onDeleteColumn,
+  onMoveToColumn
 }) => {
   // Manejar eliminación de columna con confirmación
   const handleDeleteColumn = () => {
@@ -121,6 +123,8 @@ const KanbanColumn = ({
             onDragStart={onDragStart}
             onDragEnd={onDragEnd}
             onDelete={onDelete}
+            onMoveToColumn={onMoveToColumn}
+            columns={columns}
           />
         ))}
 
